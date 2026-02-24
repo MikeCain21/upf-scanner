@@ -1,0 +1,40 @@
+{
+  "name": "nova-extension",
+  "version": "0.1.0",
+  "description": "Chrome extension that identifies ultra-processed foods on UK supermarket websites using NOVA classification",
+  "main": "manifest.json",
+  "scripts": {
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:verbose": "jest --verbose"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/nova-extension.git"
+  },
+  "keywords": [
+    "chrome-extension",
+    "nova",
+    "ultra-processed",
+    "food",
+    "health",
+    "nutrition",
+    "tesco",
+    "supermarket",
+    "openfoodfacts"
+  ],
+  "author": "Your Name <your.email@example.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/yourusername/nova-extension/issues"
+  },
+  "homepage": "https://github.com/yourusername/nova-extension#readme",
+  "devDependencies": {
+    "jest": "^29.7.0"
+  },
+  "dependencies": {},
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "private": true
+}

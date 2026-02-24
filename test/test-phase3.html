@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Phase 3 Integration Test — Ingredient Extraction</title>
+  <style>
+    body { font-family: monospace; margin: 2rem; background: #f8f9fa; color: #212529; }
+    h1 { font-size: 1.3rem; margin-bottom: 0.25rem; }
+    p.subtitle { color: #6c757d; margin-top: 0; margin-bottom: 1.5rem; font-size: 0.9rem; }
+    h2 { font-size: 1rem; margin-top: 2rem; margin-bottom: 0.5rem; color: #495057; }
+    table { border-collapse: collapse; width: 100%; font-size: 0.82rem; margin-bottom: 2rem; }
+    th { background: #343a40; color: #fff; padding: 0.5rem 0.75rem; text-align: left; }
+    td { padding: 0.45rem 0.75rem; border-bottom: 1px solid #dee2e6; vertical-align: top; }
+    tr.pass { background: #d4edda; }
+    tr.fail { background: #f8d7da; }
+    tr.skip { background: #fff3cd; }
+    .badge { font-weight: bold; }
+    pre { margin: 0; white-space: pre-wrap; word-break: break-word; }
+    #summary { margin-top: 1.5rem; padding: 0.75rem 1rem; border-radius: 4px; font-size: 1rem; }
+    #summary.all-pass { background: #d4edda; color: #155724; }
+    #summary.has-fail { background: #f8d7da; color: #721c24; }
+    .instructions { background: #e9ecef; border-left: 4px solid #6c757d; padding: 0.75rem 1rem; margin-bottom: 1.5rem; font-size: 0.85rem; }
+  </style>
+</head>
+<body>
+
+<h1>Phase 3 Integration Test — Ingredient Extraction</h1>
+<p class="subtitle">
+  Fetches all 5 saved Tesco HTML pages, extracts raw ingredient text using the
+  tesco adapter, then parses using ingredient-parser.js.
+</p>
+
+<div class="instructions">
+  <strong>How to run:</strong> Serve the project root with a local HTTP server, then open this file.<br>
+  Example: <code>python3 -m http.server 8080</code> → open
+  <code>http://localhost:8080/test/test-phase3.html</code><br>
+  <em>Note: fetch() requires a server — opening as file:// will fail due to CORS restrictions.</em>
+</div>
+
+<div id="output">Loading…</div>
+<div id="summary"></div>
+
+<!-- Load extension scripts in the same order as manifest.json -->
+<script src="../content/sites/tesco.js"></script>
+<script src="../lib/ingredient-parser.js"></script>
+
+<script>
+(function () {
+  'use strict';
+
+  // --------------------------------------------------------------------------
+  // Test page definitions
+  // --------------------------------------------------------------------------
+
+  const PAGES = [
+    {
+      name: 'Apples',
+      file: 'pages/Apples/Rosedene Farms Small Apple 6 Pack - Tesco Groceries.html',
+      expectedRawContains: 'Apple',
+      expectedTokenCount: 1,
+      expectedTokens: ['Apple'],
+    },
+    {
+      name: 'Coke',
+      file: 'pages/Coke/Coca-Cola Original Taste 1.75L - Tesco Groceries.html',
+      expectedRawContains: 'Carbonated Water',
+      expectedTokenCount: 5,
+      expectedTokens: [
+        'Colour (Caramel E150d)',
+        'Acid (Phosphoric Acid)',
+      ],
+    },
+    {
+      name: 'Yoghurt',
+      file: 'pages/Yoghurt/Yoplait Frubes Yoghurt Tubes - Strawberry, Red Berry & Peach 9x37g - Tesco Groceries.html',
+      expectedRawContains: 'Yogurt',
+      expectedTokenCount: 8,
+      expectedTokens: [
+        'Yogurt (Milk)',
+        'Sugar 6.1%',
+        'Natural Flavourings (Milk)',
+      ],
+    },
+    {
+      name: 'Bread',
+      file: 'pages/Bread/Warburtons Half And Half Medium Bread 800G - Tesco Groceries.html',
+      expectedRawContains: 'Wheat Flour',
+      expectedTokenCount: 13,
+      expectedTokens: [
+        'Wheat Flour [with Calcium, Iron, Niacin (B3) and Thiamin (B1)]',
+      ],
+    },
+    {
+      name: 'HotDogs',
+      file: 'pages/HotDogs/TescoHotDog.htm',
+      expectedRawContains: 'Mechanically Separated Chicken',
+      expectedTokenCount: 16,
+      expectedTokens: [
+        'Hotdogs: 65% Mechanically Separated Chicken',
+        'Stabilisers (Triphosphates, Polyphosphates)',
+      ],
+    },
+  ];
+
+  // --------------------------------------------------------------------------
+  // Helpers
+  // --------------------------------------------------------------------------
+
+  function escHtml(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function makeRow(cssClass, badge, page, rawText, tokens, checks) {
+    const checksHtml = checks.map(function (c) {
+      return (c.ok ? '✅' : '❌') + ' ' + escHtml(c.label) + (c.ok ? '' : '<br>&nbsp;&nbsp;&nbsp;→ ' + escHtml(c.detail || ''));
+    }).join('<br>');
+
+    const tokenPreview = tokens
+      ? tokens.slice(0, 5).map(function (t, i) { return (i + 1) + '. ' + t; }).join('\n') + (tokens.length > 5 ? '\n…(' + tokens.length + ' total)' : '')
+      : '(null)';
+
+    return '<tr class="' + cssClass + '">' +
+      '<td><span class="badge">' + badge + '</span></td>' +
+      '<td>' + escHtml(page) + '</td>' +
+      '<td><pre>' + escHtml(rawText ? rawText.substring(0, 120) + (rawText.length > 120 ? '…' : '') : '(null)') + '</pre></td>' +
+      '<td><pre>' + escHtml(tokenPreview) + '</pre></td>' +
+      '<td>' + checksHtml + '</td>' +
+      '</tr>';
+  }
+
+  // --------------------------------------------------------------------------
+  // Main test runner
+  // --------------------------------------------------------------------------
+
+  async function runTests() {
+    const adapter = (window.__novaExt && window.__novaExt.adapters && window.__novaExt.adapters[0]) || null;
+    const parseIngredients = window.__novaExt && window.__novaExt.parseIngredients;
+
+    const outputEl = document.getElementById('output');
+    const summaryEl = document.getElementById('summary');
+
+    // Dependency check
+    if (!adapter) {
+      outputEl.innerHTML = '<p style="color:red">❌ ERROR: tesco adapter not found on window.__novaExt.adapters — check script load order</p>';
+      return;
+    }
+    if (!parseIngredients) {
+      outputEl.innerHTML = '<p style="color:red">❌ ERROR: parseIngredients not found on window.__novaExt — check script load order</p>';
+      return;
+    }
+
+    let html = '<h2>Results per Page</h2>';
+    html += '<table>';
+    html += '<thead><tr><th>Result</th><th>Page</th><th>Raw Text (first 120 chars)</th><th>Token Preview (first 5)</th><th>Checks</th></tr></thead>';
+    html += '<tbody>';
+
+    let passed = 0;
+    let failed = 0;
+
+    for (const page of PAGES) {
+      let rawText = null;
+      let tokens = null;
+      const checks = [];
+      let fetchError = null;
+
+      // 1. Fetch and parse the HTML file
+      try {
+        const response = await fetch(page.file);
+        if (!response.ok) {
+          throw new Error('HTTP ' + response.status + ' for ' + page.file);
+        }
+        const html = await response.text();
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+
+        // 2. Extract raw ingredient text via adapter
+        rawText = adapter.extractIngredients(doc);
+
+        // 3. Parse into token array
+        if (rawText) {
+          tokens = parseIngredients(rawText);
+        }
+      } catch (err) {
+        fetchError = err.message;
+      }
+
+      // 4. Assert
+      if (fetchError) {
+        checks.push({ ok: false, label: 'fetch/parse page', detail: fetchError });
+        failed++;
+        html += makeRow('fail', '❌', page.name, null, null, checks);
+        continue;
+      }
+
+      // Raw text found
+      const rawFound = rawText !== null;
+      checks.push({ ok: rawFound, label: 'ingredient section found in DOM', detail: rawFound ? '' : 'extractIngredients returned null' });
+
+      // Raw text contains expected substring
+      if (rawFound) {
+        const rawOk = rawText.includes(page.expectedRawContains);
+        checks.push({ ok: rawOk, label: 'raw text contains "' + page.expectedRawContains + '"', detail: rawOk ? '' : 'actual: ' + rawText.substring(0, 80) });
+      }
+
+      // Token count
+      const countOk = tokens !== null && tokens.length === page.expectedTokenCount;
+      checks.push({
+        ok: countOk,
+        label: 'token count = ' + page.expectedTokenCount,
+        detail: tokens === null ? 'tokens is null' : 'got ' + tokens.length,
+      });
+
+      // Expected tokens present
+      if (tokens) {
+        page.expectedTokens.forEach(function (expected) {
+          const found = tokens.includes(expected);
+          checks.push({
+            ok: found,
+            label: 'token: "' + expected + '"',
+            detail: found ? '' : 'not found — tokens: ' + JSON.stringify(tokens.slice(0, 6)),
+          });
+        });
+      }
+
+      const allOk = checks.every(function (c) { return c.ok; });
+      if (allOk) {
+        passed++;
+        html += makeRow('pass', '✅', page.name, rawText, tokens, checks);
+      } else {
+        failed++;
+        html += makeRow('fail', '❌', page.name, rawText, tokens, checks);
+      }
+    }
+
+    html += '</tbody></table>';
+    outputEl.innerHTML = html;
+
+    // Summary
+    const total = passed + failed;
+    if (failed === 0) {
+      summaryEl.className = 'all-pass';
+      summaryEl.textContent = '✅ All ' + total + ' pages passed';
+    } else {
+      summaryEl.className = 'has-fail';
+      summaryEl.textContent = '❌ ' + failed + ' of ' + total + ' pages FAILED';
+    }
+  }
+
+  // Override isSupported so the adapter works without tesco.com hostname
+  if (window.__novaExt && window.__novaExt.adapters && window.__novaExt.adapters[0]) {
+    window.__novaExt.adapters[0].isSupported = function () { return true; };
+  }
+
+  runTests();
+})();
+</script>
+</body>
+</html>

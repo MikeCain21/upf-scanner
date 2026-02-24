@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NOVA Extension - Test Harness</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+      padding: 40px;
+      background-color: #f5f5f5;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background-color: white;
+      padding: 40px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    h1 {
+      color: #333;
+      margin-bottom: 20px;
+      font-size: 32px;
+    }
+
+    h2 {
+      color: #555;
+      margin-top: 30px;
+      margin-bottom: 15px;
+      font-size: 24px;
+    }
+
+    h3 {
+      color: #666;
+      margin-top: 20px;
+      margin-bottom: 10px;
+      font-size: 18px;
+    }
+
+    p {
+      color: #666;
+      line-height: 1.6;
+      margin-bottom: 15px;
+    }
+
+    .instructions {
+      background-color: #e3f2fd;
+      padding: 20px;
+      border-radius: 6px;
+      border-left: 4px solid #2196f3;
+      margin-bottom: 30px;
+    }
+
+    .instructions h3 {
+      color: #1976d2;
+      margin-top: 0;
+    }
+
+    .instructions ol {
+      margin-left: 20px;
+      margin-top: 10px;
+    }
+
+    .instructions li {
+      margin-bottom: 8px;
+      color: #555;
+    }
+
+    .test-section {
+      margin-top: 40px;
+      padding: 20px;
+      background-color: #fafafa;
+      border-radius: 6px;
+      border: 1px solid #e0e0e0;
+    }
+
+    .expected-results {
+      background-color: #f1f8f4;
+      padding: 15px;
+      border-radius: 6px;
+      border-left: 4px solid #4caf50;
+      margin-top: 20px;
+    }
+
+    .expected-results h4 {
+      color: #2e7d32;
+      margin-bottom: 10px;
+    }
+
+    .expected-results ul {
+      margin-left: 20px;
+    }
+
+    .expected-results li {
+      color: #555;
+      margin-bottom: 5px;
+    }
+
+    code {
+      background-color: #f5f5f5;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-family: 'Courier New', monospace;
+      font-size: 14px;
+    }
+
+    .warning {
+      background-color: #fff3e0;
+      padding: 15px;
+      border-radius: 6px;
+      border-left: 4px solid #ff9800;
+      margin-top: 20px;
+    }
+
+    .warning strong {
+      color: #e65100;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>NOVA Extension - Test Harness</h1>
+    <p><strong>Version:</strong> 0.1.0 | <strong>Phase:</strong> 1 - Extension Setup</p>
+
+    <div class="instructions">
+      <h3>📋 Testing Instructions</h3>
+      <ol>
+        <li>Open Chrome and navigate to <code>chrome://extensions/</code></li>
+        <li>Enable <strong>Developer mode</strong> (toggle in top-right corner)</li>
+        <li>Click <strong>"Load unpacked"</strong> and select the <code>nova_extension</code> folder</li>
+        <li>Verify the extension appears in the list with no errors</li>
+        <li>Open this page (test-runner.html) in a new tab</li>
+        <li>Open <strong>Developer Tools</strong> (F12 or right-click → Inspect)</li>
+        <li>Go to the <strong>Console</strong> tab</li>
+        <li>Check for extension logs (see Expected Results below)</li>
+      </ol>
+    </div>
+
+    <div class="warning">
+      <strong>⚠️ Important:</strong> This test harness simulates a basic page structure. The extension content script is configured to run only on <code>tesco.com</code> domains in the manifest. For Phase 1 testing, you may need to temporarily modify the manifest to test on this local file, OR wait until Phase 2 when we have actual Tesco HTML pages.
+    </div>
+
+    <div class="test-section">
+      <h2>Test Elements</h2>
+      <p>The content script should inject test badges next to the headings below (if running on permitted domain):</p>
+
+      <h1>Heading 1 - Main Title</h1>
+      <p>This is a paragraph under heading 1. A test badge should appear next to the heading above.</p>
+
+      <h2>Heading 2 - Section Title</h2>
+      <p>This is content under heading 2. Check if a badge was injected.</p>
+
+      <h3>Heading 3 - Subsection</h3>
+      <p>More content under a smaller heading.</p>
+
+      <h2>Another Heading 2</h2>
+      <p>Additional content for testing.</p>
+
+      <h3>Another Heading 3</h3>
+      <p>This should also get a test badge (up to 5 elements total).</p>
+
+      <div class="expected-results">
+        <h4>✅ Expected Results in Console:</h4>
+        <ul>
+          <li><code>[NOVA Extension] Extension loaded - Version 0.1.0, Phase 1</code></li>
+          <li><code>[NOVA Extension] Current URL: file:///...</code> or <code>chrome-extension://...</code></li>
+          <li><code>[NOVA Extension] Not on Tesco website, extension will not run</code> (if not on tesco.com)</li>
+          <li><strong>OR</strong> (if domain check passes):</li>
+          <li><code>[NOVA Extension] On Tesco website, proceeding with initialization</code></li>
+          <li><code>[NOVA Extension] DOM already loaded, injecting badges immediately</code></li>
+          <li><code>[NOVA Extension] Found X elements to badge (test mode)</code></li>
+          <li><code>[NOVA Extension] Injected test badge into H1</code> (repeated for each element)</li>
+        </ul>
+      </div>
+
+      <div class="expected-results" style="margin-top: 15px;">
+        <h4>✅ Expected Visual Results:</h4>
+        <ul>
+          <li>Blue "TEST" badges should appear next to the first 5 headings above</li>
+          <li>Badges should be inline with the heading text</li>
+          <li>Badges should have: blue background, white text, rounded corners</li>
+          <li>Page layout should not be broken</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="test-section">
+      <h2>Phase 1 Verification Checklist</h2>
+      <p>Use this checklist to verify all Phase 1 requirements (from docs/TESTING.md):</p>
+
+      <div style="margin-top: 15px;">
+        <h3>Manual Test Checklist:</h3>
+        <ul style="margin-left: 20px; margin-top: 10px;">
+          <li style="margin-bottom: 10px;">
+            <input type="checkbox" id="test1">
+            <label for="test1"> Extension loads without errors in <code>chrome://extensions</code></label>
+          </li>
+          <li style="margin-bottom: 10px;">
+            <input type="checkbox" id="test2">
+            <label for="test2"> Open test-runner.html → See "Extension loaded" message in console</label>
+          </li>
+          <li style="margin-bottom: 10px;">
+            <input type="checkbox" id="test3">
+            <label for="test3"> Static "TEST" badges appear on page elements (if domain check passes)</label>
+          </li>
+          <li style="margin-bottom: 10px;">
+            <input type="checkbox" id="test4">
+            <label for="test4"> No console errors or warnings</label>
+          </li>
+          <li style="margin-bottom: 10px;">
+            <input type="checkbox" id="test5">
+            <label for="test5"> Extension icon appears in toolbar (once icons are added)</label>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="test-section">
+      <h2>Next Steps</h2>
+      <p>After verifying Phase 1:</p>
+      <ol style="margin-left: 20px; margin-top: 10px;">
+        <li style="margin-bottom: 8px;">Log all test results in <code>docs/PROGRESS.md</code></li>
+        <li style="margin-bottom: 8px;">If all tests pass, mark Phase 1 complete</li>
+        <li style="margin-bottom: 8px;">Proceed to Phase 2: Tesco Product Detection</li>
+        <li style="margin-bottom: 8px;">Request saved Tesco HTML page from user for Phase 2 testing</li>
+      </ol>
+    </div>
+  </div>
+
+  <script>
+    // Test script to verify JavaScript execution
+    console.log('[Test Harness] Page loaded successfully');
+    console.log('[Test Harness] Ready for extension testing');
+
+    // Add timestamp to help identify test runs
+    const timestamp = new Date().toISOString();
+    console.log(`[Test Harness] Test run at: ${timestamp}`);
+  </script>
+</body>
+</html>
