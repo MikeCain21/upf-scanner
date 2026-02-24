@@ -1,0 +1,99 @@
+/**
+ * NOVA Extension - Badge Styles
+ *
+ * Styles for NOVA classification badges
+ * @version 0.1.0
+ */
+
+/* Test badge (Phase 1 only) */
+.nova-test-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  margin-left: 8px;
+  background-color: #007bff;
+  color: white;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: bold;
+  font-family: Arial, sans-serif;
+  vertical-align: middle;
+}
+
+/* NOVA badges (will be implemented in Phase 7) */
+.nova-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  margin-left: 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: bold;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+  vertical-align: middle;
+  cursor: help;
+  transition: transform 0.2s ease;
+}
+
+.nova-badge:hover {
+  transform: scale(1.05);
+}
+
+/* NOVA 1 - Unprocessed (Green) */
+.nova-badge-1 {
+  background-color: #28a745;
+  color: white;
+}
+
+/* NOVA 2 - Processed ingredients (Yellow) */
+.nova-badge-2 {
+  background-color: #ffc107;
+  color: #000;
+}
+
+/* NOVA 3 - Processed foods (Orange) */
+.nova-badge-3 {
+  background-color: #fd7e14;
+  color: white;
+}
+
+/* NOVA 4 - Ultra-processed (Red) */
+.nova-badge-4 {
+  background-color: #dc3545;
+  color: white;
+}
+
+/* Loading state */
+.nova-badge-loading {
+  background-color: #6c757d;
+  color: white;
+}
+
+/* Error state */
+.nova-badge-error {
+  background-color: #6c757d;
+  color: white;
+  cursor: help;
+}
+
+/* Tooltip (will be implemented in Phase 7) */
+.nova-tooltip {
+  position: absolute;
+  background-color: rgba(0, 0, 0, 0.9);
+  color: white;
+  padding: 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  line-height: 1.5;
+  max-width: 300px;
+  z-index: 10000;
+  pointer-events: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.nova-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 20px;
+  border: 6px solid transparent;
+  border-top-color: rgba(0, 0, 0, 0.9);
+}

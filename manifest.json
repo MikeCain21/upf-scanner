@@ -1,0 +1,53 @@
+{
+  "manifest_version": 3,
+  "name": "NOVA Extension",
+  "version": "0.3.0",
+  "description": "Identify ultra-processed foods on UK supermarket websites using NOVA classification",
+  "author": "NOVA Extension Contributors",
+  "icons": {
+    "16": "icons/icon16.png"
+  },
+  "permissions": [
+    "storage"
+  ],
+  "host_permissions": [
+    "https://www.tesco.com/*",
+    "https://world.openfoodfacts.org/*"
+  ],
+  "background": {
+    "service_worker": "background/service-worker.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.tesco.com/*"
+      ],
+      "js": [
+        "content/sites/tesco.js",
+        "lib/ingredient-parser.js",
+        "content/main.js"
+      ],
+      "css": [
+        "content/ui/styles.css"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png"
+    },
+    "default_title": "NOVA Extension"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "icons/*.png"
+      ],
+      "matches": [
+        "https://www.tesco.com/*"
+      ]
+    }
+  ]
+}

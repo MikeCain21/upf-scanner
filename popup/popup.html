@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NOVA Extension</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      width: 320px;
+      padding: 20px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+      font-size: 14px;
+      color: #333;
+    }
+
+    h1 {
+      font-size: 18px;
+      margin-bottom: 15px;
+      color: #dc3545;
+    }
+
+    .version {
+      font-size: 12px;
+      color: #666;
+      margin-bottom: 20px;
+    }
+
+    .status {
+      background-color: #f8f9fa;
+      padding: 15px;
+      border-radius: 6px;
+      margin-bottom: 15px;
+    }
+
+    .status-item {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    .status-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .status-label {
+      color: #666;
+    }
+
+    .status-value {
+      font-weight: bold;
+      color: #333;
+    }
+
+    .message {
+      text-align: center;
+      padding: 20px;
+      color: #666;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+
+    .button:hover {
+      background-color: #0056b3;
+    }
+
+    .button:disabled {
+      background-color: #6c757d;
+      cursor: not-allowed;
+    }
+
+    .links {
+      margin-top: 20px;
+      padding-top: 15px;
+      border-top: 1px solid #e0e0e0;
+      font-size: 12px;
+    }
+
+    .links a {
+      color: #007bff;
+      text-decoration: none;
+      display: block;
+      margin-bottom: 8px;
+    }
+
+    .links a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <h1>🔴 NOVA Extension</h1>
+  <div class="version">Version 0.1.0 - Phase 1</div>
+
+  <div class="status">
+    <div class="status-item">
+      <span class="status-label">Status:</span>
+      <span class="status-value" id="status">Active</span>
+    </div>
+    <div class="status-item">
+      <span class="status-label">Products Scanned:</span>
+      <span class="status-value" id="scanned">0</span>
+    </div>
+    <div class="status-item">
+      <span class="status-label">NOVA 4 Detected:</span>
+      <span class="status-value" id="nova4">0</span>
+    </div>
+  </div>
+
+  <div class="message">
+    <p><strong>Phase 1 - Setup Complete</strong></p>
+    <p style="margin-top: 10px;">Extension is ready for testing. Visit Tesco.com to see NOVA ratings on products.</p>
+    <p style="margin-top: 10px; font-size: 12px; color: #999;">Full functionality coming in later phases.</p>
+  </div>
+
+  <button class="button" id="clearCache" disabled title="Coming in Phase 6">
+    Clear Cache
+  </button>
+
+  <div class="links">
+    <a href="#" id="viewDocs">📚 View Documentation</a>
+    <a href="#" id="reportIssue">🐛 Report Issue</a>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
