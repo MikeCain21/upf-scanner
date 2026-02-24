@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "NOVA Extension",
-  "version": "0.3.0",
+  "version": "0.5.0",
   "description": "Identify ultra-processed foods on UK supermarket websites using NOVA classification",
   "author": "NOVA Extension Contributors",
   "icons": {
@@ -25,6 +25,8 @@
       "js": [
         "content/sites/tesco.js",
         "lib/ingredient-parser.js",
+        "lib/nova-indicators.js",
+        "lib/nova-classifier.js",
         "content/main.js"
       ],
       "css": [
