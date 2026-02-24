@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Phase 7 - Badge Display Test Harness</title>
+  <link rel="stylesheet" href="../content/ui/styles.css" />
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+      padding: 32px;
+      max-width: 900px;
+      margin: 0 auto;
+      background: #f8f9fa;
+    }
+    h1 { color: #333; }
+    h2 { color: #555; margin-top: 32px; border-bottom: 1px solid #ddd; padding-bottom: 8px; }
+    .test-section {
+      background: white;
+      border-radius: 8px;
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    .test-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin: 12px 0;
+      padding: 8px 0;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .test-label {
+      min-width: 220px;
+      font-size: 14px;
+      color: #555;
+    }
+    .product-mock {
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 16px;
+      margin: 8px 0;
+    }
+    .product-mock h3 { margin: 0 0 8px 0; font-size: 16px; }
+    .checklist { list-style: none; padding: 0; }
+    .checklist li {
+      padding: 6px 0;
+      font-size: 14px;
+      border-bottom: 1px solid #f5f5f5;
+    }
+    .checklist li::before { content: '⬜ '; }
+    .pass { color: #28a745; font-weight: bold; }
+    .fail { color: #dc3545; font-weight: bold; }
+    #test-results { margin-top: 16px; }
+  </style>
+</head>
+<body>
+
+<h1>Phase 7 - Badge Display Test Harness</h1>
+<p>Open this file directly in Chrome (<strong>no server needed</strong>). Verify each section visually.</p>
+
+<!-- ============================================================
+     Section 1: All badge states
+     ============================================================ -->
+<div class="test-section">
+  <h2>1. Badge States</h2>
+  <p>Each badge should display with the correct colour and text:</p>
+
+  <div class="test-row">
+    <span class="test-label">NOVA 1 (Green):</span>
+    <span id="badge-nova1"></span>
+  </div>
+  <div class="test-row">
+    <span class="test-label">NOVA 2 (Yellow):</span>
+    <span id="badge-nova2"></span>
+  </div>
+  <div class="test-row">
+    <span class="test-label">NOVA 3 (Orange):</span>
+    <span id="badge-nova3"></span>
+  </div>
+  <div class="test-row">
+    <span class="test-label">NOVA 4 (Red, with indicators):</span>
+    <span id="badge-nova4"></span>
+  </div>
+  <div class="test-row">
+    <span class="test-label">Loading state (Grey, "..."):</span>
+    <span id="badge-loading"></span>
+  </div>
+  <div class="test-row">
+    <span class="test-label">Error state (Grey, "?"):</span>
+    <span id="badge-error"></span>
+  </div>
+</div>
+
+<!-- ============================================================
+     Section 2: Tooltip behaviour
+     ============================================================ -->
+<div class="test-section">
+  <h2>2. Tooltip Behaviour</h2>
+  <p>Hover over each badge to verify the tooltip appears above it, then disappears on mouse-out.</p>
+
+  <div class="test-row">
+    <span class="test-label">NOVA 4 (hover for tooltip):</span>
+    <span id="tooltip-test-4"></span>
+  </div>
+  <div class="test-row">
+    <span class="test-label">NOVA 1 (hover for tooltip):</span>
+    <span id="tooltip-test-1"></span>
+  </div>
+  <div class="test-row">
+    <span class="test-label">Error (hover for tooltip):</span>
+    <span id="tooltip-test-err"></span>
+  </div>
+</div>
+
+<!-- ============================================================
+     Section 3: injectBadge into mock product elements
+     ============================================================ -->
+<div class="test-section">
+  <h2>3. Badge Injection (injectBadge)</h2>
+  <p>Badges should appear adjacent to product elements without breaking layout.</p>
+
+  <div class="product-mock">
+    <h1 id="pdp-h1" data-auto="pdp-product-title">Heinz Cream of Tomato Soup 400g</h1>
+    <p>This is a mock PDP product. The NOVA badge should appear just after the H1.</p>
+  </div>
+
+  <div class="product-mock" id="tile-mock" data-product-id="12345">
+    <a href="#">Tesco Chocolate Digestive Biscuits</a>
+    <p>This is a mock product tile. The NOVA badge should appear after the title link.</p>
+  </div>
+</div>
+
+<!-- ============================================================
+     Section 4: Automated checks
+     ============================================================ -->
+<div class="test-section">
+  <h2>4. Automated Checks</h2>
+  <div id="test-results"></div>
+</div>
+
+<!-- ============================================================
+     Section 5: Manual checklist
+     ============================================================ -->
+<div class="test-section">
+  <h2>5. Manual Verification Checklist</h2>
+  <ul class="checklist">
+    <li>NOVA 1 badge is green (#28a745) with text "NOVA 1"</li>
+    <li>NOVA 2 badge is yellow (#ffc107) with text "NOVA 2"</li>
+    <li>NOVA 3 badge is orange (#fd7e14) with text "NOVA 3"</li>
+    <li>NOVA 4 badge is red (#dc3545) with text "NOVA 4"</li>
+    <li>Loading badge is grey with text "..."</li>
+    <li>Error badge is grey with text "?"</li>
+    <li>Hovering NOVA 4 badge shows tooltip with "NOVA 4: Ultra-processed food"</li>
+    <li>Tooltip for NOVA 4 includes "Indicators:" line</li>
+    <li>Tooltip disappears when mouse leaves badge</li>
+    <li>Tooltip does not intercept mouse events (pointer-events: none)</li>
+    <li>NOVA badge appears after the H1 on the mock PDP product</li>
+    <li>NOVA badge appears after the anchor link in the mock tile</li>
+    <li>Page layout is not broken by badge injection</li>
+  </ul>
+</div>
+
+<script src="../content/ui/badge.js"></script>
+<script>
+  (function () {
+    'use strict';
+
+    const ext = window.__novaExt;
+
+    // ------------------------------------------------------------------
+    // Section 1: All badge states
+    // ------------------------------------------------------------------
+    const badges = {
+      nova1: ext.createBadge(1, 'Single ingredient — unprocessed.', []),
+      nova2: ext.createBadge(2, 'Culinary ingredient (salt, oil).', []),
+      nova3: ext.createBadge(3, 'Processed food with culinary ingredients.', []),
+      nova4: ext.createBadge(4, 'Multiple ultra-processed indicators detected.', [
+        'E471', 'E472e', 'Maltodextrin', 'Modified Maize Starch', 'E621',
+      ]),
+    };
+
+    document.getElementById('badge-nova1').appendChild(badges.nova1);
+    document.getElementById('badge-nova2').appendChild(badges.nova2);
+    document.getElementById('badge-nova3').appendChild(badges.nova3);
+    document.getElementById('badge-nova4').appendChild(badges.nova4);
+
+    const loadingBadge = document.createElement('span');
+    ext.setBadgeLoading(loadingBadge);
+    document.getElementById('badge-loading').appendChild(loadingBadge);
+
+    const errorBadge = document.createElement('span');
+    ext.setBadgeError(errorBadge, 'No ingredients found for this product.');
+    document.getElementById('badge-error').appendChild(errorBadge);
+
+    // ------------------------------------------------------------------
+    // Section 2: Tooltip tests
+    // ------------------------------------------------------------------
+    document.getElementById('tooltip-test-4').appendChild(
+      ext.createBadge(4, 'Ultra-processed: multiple additives detected.', ['E471', 'Maltodextrin'])
+    );
+    document.getElementById('tooltip-test-1').appendChild(
+      ext.createBadge(1, 'Apple — single unprocessed ingredient.', [])
+    );
+    const errTooltipBadge = document.createElement('span');
+    ext.setBadgeError(errTooltipBadge, 'Ingredient list could not be parsed.');
+    document.getElementById('tooltip-test-err').appendChild(errTooltipBadge);
+
+    // ------------------------------------------------------------------
+    // Section 3: injectBadge
+    // ------------------------------------------------------------------
+    const pdpH1 = document.getElementById('pdp-h1');
+    const pdpBadge = ext.createBadge(4, 'Contains multiple ultra-processed additives.', ['E471', 'E621']);
+    ext.injectBadge(pdpH1, pdpBadge);
+
+    const tileMock = document.getElementById('tile-mock');
+    const tileBadge = document.createElement('span');
+    ext.setBadgeLoading(tileBadge);
+    ext.injectBadge(tileMock, tileBadge);
+
+    // ------------------------------------------------------------------
+    // Section 4: Automated checks
+    // ------------------------------------------------------------------
+    const results = [];
+
+    function check(description, condition) {
+      results.push({ description, pass: condition });
+    }
+
+    // Check badge classes
+    check('NOVA 1 badge has class nova-badge-1', badges.nova1.classList.contains('nova-badge-1'));
+    check('NOVA 2 badge has class nova-badge-2', badges.nova2.classList.contains('nova-badge-2'));
+    check('NOVA 3 badge has class nova-badge-3', badges.nova3.classList.contains('nova-badge-3'));
+    check('NOVA 4 badge has class nova-badge-4', badges.nova4.classList.contains('nova-badge-4'));
+    check('NOVA 1 badge text is "NOVA 1"', badges.nova1.textContent === 'NOVA 1');
+    check('NOVA 4 badge text is "NOVA 4"', badges.nova4.textContent === 'NOVA 4');
+
+    // Check loading badge
+    check('Loading badge has class nova-badge-loading', loadingBadge.classList.contains('nova-badge-loading'));
+    check('Loading badge text is "..."', loadingBadge.textContent === '...');
+
+    // Check error badge
+    check('Error badge has class nova-badge-error', errorBadge.classList.contains('nova-badge-error'));
+    check('Error badge text is "?"', errorBadge.textContent === '?');
+
+    // Check tooltip element exists on document.body
+    const tooltip = document.querySelector('.nova-tooltip');
+    check('Tooltip element was created on document.body', tooltip !== null);
+    check('Tooltip has pointer-events: none', tooltip
+      ? getComputedStyle(tooltip).pointerEvents === 'none'
+      : false);
+
+    // Check injectBadge — PDP badge should be after H1
+    check(
+      'PDP badge injected after H1',
+      pdpH1.nextElementSibling === pdpBadge
+    );
+
+    // Check injectBadge — tile badge should be after first <a>
+    const tileAnchor = tileMock.querySelector('a');
+    check(
+      'Tile badge injected after first anchor',
+      tileAnchor && tileAnchor.nextElementSibling === tileBadge
+    );
+
+    // Check all badges have nova-badge base class
+    check('All createBadge results have nova-badge class', [
+      badges.nova1, badges.nova2, badges.nova3, badges.nova4,
+    ].every(b => b.classList.contains('nova-badge')));
+
+    // Render results
+    const container = document.getElementById('test-results');
+    const passed = results.filter(r => r.pass).length;
+    const total = results.length;
+    const allPass = passed === total;
+
+    const summary = document.createElement('p');
+    summary.innerHTML = allPass
+      ? `<span class="pass">✅ All ${total} automated checks passed</span>`
+      : `<span class="fail">❌ ${passed}/${total} checks passed — see failures below</span>`;
+    container.appendChild(summary);
+
+    results.forEach(({ description, pass }) => {
+      const p = document.createElement('p');
+      p.style.margin = '4px 0';
+      p.style.fontSize = '13px';
+      p.textContent = `${pass ? '✅' : '❌'} ${description}`;
+      if (!pass) p.style.color = '#dc3545';
+      container.appendChild(p);
+    });
+  })();
+</script>
+
+</body>
+</html>

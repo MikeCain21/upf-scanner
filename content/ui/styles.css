@@ -74,9 +74,9 @@
   cursor: help;
 }
 
-/* Tooltip (will be implemented in Phase 7) */
+/* Tooltip (implemented in Phase 7) */
 .nova-tooltip {
-  position: absolute;
+  position: fixed;
   background-color: rgba(0, 0, 0, 0.9);
   color: white;
   padding: 12px;
@@ -87,6 +87,7 @@
   z-index: 10000;
   pointer-events: none;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  white-space: pre-wrap;
 }
 
 .nova-tooltip::after {
