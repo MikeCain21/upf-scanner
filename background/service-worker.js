@@ -1,44 +1,243 @@
 /**
  * NOVA Extension - Background Service Worker
  *
- * Handles:
- * - API calls to OpenFoodFacts
- * - Caching with chrome.storage.local
- * - Message passing with content scripts
+ * Handles OpenFoodFacts API lookups, caching, and message passing with
+ * content scripts. Runs as a Manifest V3 service worker.
  *
- * @version 0.1.0
- * @phase 1 - Placeholder (will be implemented in Phase 6)
+ * Message API:
+ *   Request:  { type: 'FETCH_PRODUCT', barcode: string }
+ *   Response: { success: true,  source: 'api'|'cache'|'not_found'|'no_nova',
+ *               novaScore?: number, productName?: string }
+ *           | { success: false, error: string }
+ *
+ * Content scripts fall back to local classification when source is
+ * 'not_found' or 'no_nova' (handled in Phase 7–8 wiring).
+ *
+ * @version 0.6.0
  */
 
-console.log('[NOVA Background] Service worker loaded');
+'use strict';
 
-// Listen for extension installation
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
+const API_BASE_URL = 'https://world.openfoodfacts.org/api/v2/product';
+
+// User-Agent is required by OpenFoodFacts Terms of Service.
+const USER_AGENT = 'NOVA-Extension/1.0 (open-source food classification tool)';
+
+// Cache key prefix (short to save storage space).
+const CACHE_PREFIX = 'off_';
+
+// Cache TTL: 7 days in milliseconds.
+const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+
+// ---------------------------------------------------------------------------
+// Pure helpers (mirrored in lib/openfoodfacts.js for Jest testing)
+// ---------------------------------------------------------------------------
+
+/**
+ * Extracts the NOVA score (1–4) from an OpenFoodFacts product object.
+ * Tries nova_group first, then falls back to nova_groups_tags.
+ *
+ * @param {Object|null} product
+ * @returns {number|null}
+ */
+function extractNovaScore(product) {
+  if (!product) return null;
+
+  const direct = parseInt(product.nova_group, 10);
+  if (!isNaN(direct) && direct >= 1 && direct <= 4) {
+    return direct;
+  }
+
+  const tags = product.nova_groups_tags;
+  if (Array.isArray(tags) && tags.length > 0) {
+    const match = tags[0].match(/en:(\d)-/);
+    if (match) {
+      const score = parseInt(match[1], 10);
+      if (score >= 1 && score <= 4) return score;
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Validates and unwraps an OpenFoodFacts API JSON response.
+ *
+ * @param {Object|null} data
+ * @returns {Object|null} product object or null
+ */
+function parseApiResponse(data) {
+  if (!data || data.status !== 1) return null;
+  return data.product || null;
+}
+
+// ---------------------------------------------------------------------------
+// Cache helpers (chrome.storage.local)
+// ---------------------------------------------------------------------------
+
+/**
+ * Reads a cached product entry. Returns null if absent or expired.
+ *
+ * @param {string} barcode
+ * @returns {Promise<Object|null>}
+ */
+async function getCached(barcode) {
+  const key = CACHE_PREFIX + barcode;
+  try {
+    const result = await chrome.storage.local.get(key);
+    if (!result[key]) return null;
+
+    const cached = result[key];
+    if (Date.now() - cached.timestamp > CACHE_TTL_MS) {
+      // Entry expired — remove and treat as miss
+      await chrome.storage.local.remove(key);
+      return null;
+    }
+
+    console.log(`[NOVA Cache] Hit for ${barcode}`);
+    return cached;
+  } catch (err) {
+    console.warn('[NOVA Cache] Read error:', err.message);
+    return null;
+  }
+}
+
+/**
+ * Writes a product entry to the cache with the current timestamp.
+ *
+ * @param {string} barcode
+ * @param {{ novaScore: number, productName: string }} entry
+ * @returns {Promise<void>}
+ */
+async function setCached(barcode, entry) {
+  const key = CACHE_PREFIX + barcode;
+  try {
+    await chrome.storage.local.set({ [key]: { ...entry, timestamp: Date.now() } });
+    console.log(`[NOVA Cache] Stored ${barcode}`);
+  } catch (err) {
+    console.warn('[NOVA Cache] Write error:', err.message);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// API fetch
+// ---------------------------------------------------------------------------
+
+/**
+ * Fetches a product from OpenFoodFacts by barcode.
+ * Returns the product object, or null if not found or on error.
+ *
+ * @param {string} barcode - EAN-13 or UPC barcode string
+ * @returns {Promise<Object|null>}
+ */
+async function fetchProductByBarcode(barcode) {
+  const url = `${API_BASE_URL}/${barcode}.json`;
+  try {
+    const response = await fetch(url, {
+      headers: { 'User-Agent': USER_AGENT },
+    });
+
+    if (!response.ok) {
+      // 404 is expected for unknown barcodes — not an error
+      if (response.status === 404) return null;
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    const data = await response.json();
+    return parseApiResponse(data);
+  } catch (err) {
+    console.warn(`[NOVA API] Fetch error for ${barcode}:`, err.message);
+    return null; // Network/parse error → trigger fallback in content script
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Main lookup pipeline: cache → API
+// ---------------------------------------------------------------------------
+
+/**
+ * Looks up a product by barcode: checks cache first, then queries API.
+ *
+ * Returns one of:
+ *   { source: 'cache'|'api', novaScore: number, productName: string }
+ *   { source: 'not_found' }   — barcode not in OpenFoodFacts
+ *   { source: 'no_nova' }     — product found but NOVA score unavailable
+ *
+ * @param {string} barcode
+ * @returns {Promise<Object>}
+ */
+async function lookupProduct(barcode) {
+  // 1. Cache hit
+  const cached = await getCached(barcode);
+  if (cached) {
+    return { source: 'cache', novaScore: cached.novaScore, productName: cached.productName };
+  }
+
+  // 2. API lookup
+  console.log(`[NOVA API] Querying OpenFoodFacts for barcode ${barcode}`);
+  const product = await fetchProductByBarcode(barcode);
+
+  if (!product) {
+    console.log(`[NOVA API] Not found in OpenFoodFacts: ${barcode}`);
+    return { source: 'not_found' };
+  }
+
+  const novaScore = extractNovaScore(product);
+  if (!novaScore) {
+    console.log(`[NOVA API] Product found but no NOVA data: ${barcode}`);
+    return { source: 'no_nova' };
+  }
+
+  // 3. Cache successful result and return
+  const productName = product.product_name || '';
+  await setCached(barcode, { novaScore, productName });
+
+  console.log(`[NOVA API] NOVA ${novaScore} (${productName}) from OpenFoodFacts for ${barcode}`);
+  return { source: 'api', novaScore, productName };
+}
+
+// ---------------------------------------------------------------------------
+// Extension lifecycle
+// ---------------------------------------------------------------------------
+
 chrome.runtime.onInstalled.addListener((details) => {
-  console.log('[NOVA Background] Extension installed/updated', details.reason);
-
+  console.log('[NOVA Background] Extension installed/updated:', details.reason);
   if (details.reason === 'install') {
-    console.log('[NOVA Background] First time installation');
-    // Could set up initial storage here
-  } else if (details.reason === 'update') {
-    console.log('[NOVA Background] Extension updated from version', details.previousVersion);
+    console.log('[NOVA Background] First-time installation');
   }
 });
 
-// Listen for messages from content scripts
+// ---------------------------------------------------------------------------
+// Message handler
+// ---------------------------------------------------------------------------
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  console.log('[NOVA Background] Received message', message, 'from', sender.tab?.url);
+  console.log('[NOVA Background] Message received:', message.type, 'from', sender.tab?.url);
 
-  // Handle different message types (to be implemented in Phase 6)
-  if (message.type === 'FETCH_PRODUCT') {
-    // Placeholder for Phase 6: OpenFoodFacts API lookup
-    console.log('[NOVA Background] FETCH_PRODUCT request (not yet implemented)');
-    sendResponse({ success: false, error: 'Not implemented in Phase 1' });
-    return true; // Keep message channel open
+  if (message.type !== 'FETCH_PRODUCT') {
+    sendResponse({ success: false, error: 'Unknown message type' });
+    return false;
   }
 
-  // Unknown message type
-  sendResponse({ success: false, error: 'Unknown message type' });
-  return false;
+  const { barcode } = message;
+  if (!barcode) {
+    sendResponse({ success: false, error: 'No barcode provided' });
+    return false;
+  }
+
+  // Return true BEFORE the async call to keep the message channel open.
+  lookupProduct(barcode)
+    .then(result => sendResponse({ success: true, ...result }))
+    .catch(err => {
+      console.error('[NOVA Background] Unexpected error:', err);
+      sendResponse({ success: false, error: err.message });
+    });
+
+  return true; // Keeps the message channel open for the async response
 });
 
-console.log('[NOVA Background] Service worker ready');
+console.log('[NOVA Background] Service worker ready (Phase 6)');
