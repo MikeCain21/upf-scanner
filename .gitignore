@@ -1,0 +1,80 @@
+# NOVA Extension - .gitignore
+
+# Node modules (if using any build tools in future)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build output (if build step added later)
+dist/
+build/
+
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# IDE / Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+
+# Chrome extension development
+*.pem
+*.crx
+*.zip
+
+# Saved-page asset directories (images, CSS, JS downloaded by "Save page complete")
+# The HTML test pages themselves are committed; their _files/ companion folders are not
+test/pages/**/*_files/
+
+# Claude Code local settings
+.claude/
+
+# Environment variables (if ever needed)
+.env
+.env.local
+.env.*.local
+
+# Logs
+logs/
+*.log
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Cache
+.cache/
+.parcel-cache/
+
+# Coverage reports (if tests added)
+coverage/
+.nyc_output/
+
+# macOS
+.AppleDouble
+.LSOverride
+
+# Windows
+ehthumbs.db
+*.stackdump
+
+# Linux
+.directory
+
+# Backup files
+*.bak
+*.backup
+*~
+
+# Package manager lock files (keep package.json, ignore locks for now)
+# package-lock.json
+# yarn.lock
