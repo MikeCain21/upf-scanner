@@ -114,6 +114,8 @@
    * @param {string} tooltipText - Text to show on hover
    */
   function _attachTooltip(badgeEl, tooltipText) {
+    // Pre-create the tooltip element so it exists on document.body from first badge creation
+    getTooltip();
     badgeEl.addEventListener('mouseenter', () => {
       const tooltip = getTooltip();
       tooltip.textContent = tooltipText;

@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<!--
+  test-integration.html — Full-Pipeline Integration Test Harness
+
+  Exercises the complete detect → extract → parse → classify → badge chain
+  using an inline mock Tesco DOM (no server fetch required).
+
+  Loads all content scripts in the exact order declared in manifest.json:
+    1. content/sites/tesco.js        — registers tescoAdapter on window.__novaExt
+    2. lib/ingredient-parser.js      — registers parseIngredients
+    3. lib/nova-indicators.js        — registers detectIndicators
+    4. lib/nova-classifier.js        — reads detectIndicators at IIFE load time
+    5. content/ui/badge.js           — registers createBadge / injectBadge
+    (content/main.js excluded: adapter.isSupported() checks tesco.com hostname)
+
+  The ingredient string produces 12 tokens and NOVA 4 (confidence 0.9) with
+  7 indicators: Modified Maize Starch, Glucose-Fructose Syrup, Maltodextrin,
+  E471, E472e, E621, E250.
+
+  Results exposed on window.__novaIntegrationResults for Chrome DevTools MCP:
+    { passed, total, allPass, checks, novaScore, novaConfidence }
+
+  Serve from project root with:
+    python3 -m http.server 8080
+  Then open: http://localhost:8080/test/test-integration.html
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NOVA Extension — Integration Test</title>
+  <link rel="stylesheet" href="../content/ui/styles.css">
+  <style>
+    body { font-family: monospace; padding: 20px; background: #f8f9fa; }
+    h1 { font-size: 1.3em; margin-bottom: 4px; }
+    h2 { font-size: 1.1em; margin-top: 24px; }
+    .check { display: flex; align-items: flex-start; gap: 8px; margin: 4px 0; font-size: 0.9em; }
+    .pass { color: #1a7f37; }
+    .fail { color: #cf222e; font-weight: bold; }
+    #summary { margin-top: 16px; font-weight: bold; font-size: 1em; padding: 8px 12px; border-radius: 4px; display: inline-block; }
+    #summary.all-pass { background: #d1fae5; color: #065f46; border: 1px solid #6ee7b7; }
+    #summary.has-fail  { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+    #mock-dom { margin-top: 24px; padding: 16px; background: #fff; border: 1px solid #d0d7de; border-radius: 6px; }
+    #mock-dom h2 { margin-top: 0; }
+    pre { background: #f6f8fa; padding: 8px; border-radius: 4px; font-size: 0.8em; overflow-x: auto; }
+  </style>
+</head>
+<body>
+
+  <!-- =========================================================
+       Mock Tesco DOM — inline product data, no fetch required
+       ========================================================= -->
+  <div id="mock-dom">
+    <h2>Mock Tesco Product Page (inline DOM)</h2>
+
+    <!-- Main product H1 (PDP) — selector: h1[data-auto="pdp-product-title"] -->
+    <h1 data-auto="pdp-product-title">Tesco Ultra-Processed Hot Dogs 400g</h1>
+
+    <!-- Ingredient accordion panel — selector: #accordion-panel-ingredients-panel h3 + div -->
+    <div id="accordion-panel-ingredients-panel">
+      <div>
+        <h3>Ingredients</h3>
+        <div>
+          Chicken (65%), Water, Modified Maize Starch, Glucose-Fructose Syrup,
+          Salt, Dextrose, Stabilisers (Triphosphates, Polyphosphates),
+          Emulsifiers (E471, E472e), Flavour Enhancer (E621),
+          Preservative (E250), Maltodextrin, Natural Flavourings
+        </div>
+      </div>
+    </div>
+
+    <!-- Product tile — selector: [data-product-id] -->
+    <div data-product-id="99999">
+      <a href="#">Tesco Soft White Hot Dog Rolls 6 Pack</a>
+    </div>
+  </div>
+
+  <!-- =========================================================
+       Results panel
+       ========================================================= -->
+  <h2>Integration Test Results</h2>
+  <div id="checks"></div>
+  <div id="summary"></div>
+  <pre id="raw-results"></pre>
+
+  <!-- =========================================================
+       Content scripts — loaded in manifest order
+       ========================================================= -->
+  <script src="../content/sites/tesco.js"></script>
+  <script src="../lib/ingredient-parser.js"></script>
+  <script src="../lib/nova-indicators.js"></script>
+  <script src="../lib/nova-classifier.js"></script>
+  <script src="../content/ui/badge.js"></script>
+
+  <!-- =========================================================
+       Test runner
+       ========================================================= -->
+  <script>
+    (function () {
+      'use strict';
+
+      const checksEl = document.getElementById('checks');
+      const summaryEl = document.getElementById('summary');
+      const rawResultsEl = document.getElementById('raw-results');
+
+      const results = { passed: 0, total: 0, allPass: false, checks: [], novaScore: null, novaConfidence: null };
+
+      /**
+       * Records a single check result and renders it to the DOM.
+       * @param {string} label  - Human-readable description
+       * @param {boolean} pass  - Whether the check passed
+       * @param {string} [detail] - Optional detail appended to label
+       */
+      function check(label, pass, detail) {
+        results.total++;
+        if (pass) results.passed++;
+        const icon = pass ? '✅' : '❌';
+        const className = pass ? 'pass' : 'fail';
+        const text = detail ? `${label} — ${detail}` : label;
+        results.checks.push({ label: text, pass });
+
+        const div = document.createElement('div');
+        div.className = `check ${className}`;
+        div.textContent = `${icon} ${text}`;
+        checksEl.appendChild(div);
+      }
+
+      // -----------------------------------------------------------------
+      // Run checks
+      // -----------------------------------------------------------------
+
+      const ext = window.__novaExt;
+
+      // Check 1: window.__novaExt exists
+      check('window.__novaExt exists', !!ext);
+
+      // Check 2: adapters array has ≥1 entry
+      check('adapters array has ≥1 entry', !!(ext && Array.isArray(ext.adapters) && ext.adapters.length >= 1));
+
+      // Check 3: parseIngredients function available
+      check('parseIngredients function available', !!(ext && typeof ext.parseIngredients === 'function'));
+
+      // Check 4: detectIndicators function available
+      check('detectIndicators function available', !!(ext && typeof ext.detectIndicators === 'function'));
+
+      // Check 5: classifyByIngredients function available
+      check('classifyByIngredients function available', !!(ext && typeof ext.classifyByIngredients === 'function'));
+
+      // Check 6: createBadge function available
+      check('createBadge function available', !!(ext && typeof ext.createBadge === 'function'));
+
+      // Check 7: injectBadge function available
+      check('injectBadge function available', !!(ext && typeof ext.injectBadge === 'function'));
+
+      // Check 8: Tesco adapter found by SITE_ID
+      const tescoAdapter = ext && ext.adapters && ext.adapters.find(a => a.SITE_ID === 'tesco');
+      check('Tesco adapter found by SITE_ID', !!tescoAdapter);
+
+      // Check 9: detectProducts(document) returns 2 elements (1 H1 + 1 tile)
+      let products = [];
+      try { products = tescoAdapter ? tescoAdapter.detectProducts(document) : []; } catch (e) { /* handled below */ }
+      check('detectProducts returns 2 elements (1 H1 + 1 tile)', products.length === 2, `got ${products.length}`);
+
+      // Check 10: Main product H1 detected
+      const mainEl = products.find(el => el.tagName === 'H1');
+      check('Main product H1 detected', !!mainEl);
+
+      // Check 11: Tile with data-product-id detected
+      const tileEl = products.find(el => el.hasAttribute('data-product-id'));
+      check('Tile with data-product-id detected', !!tileEl);
+
+      // Check 12: extractIngredients(document) returns non-null text
+      let rawText = null;
+      try { rawText = tescoAdapter ? tescoAdapter.extractIngredients(document) : null; } catch (e) { /* handled below */ }
+      check('extractIngredients returns non-null text', rawText !== null && rawText !== undefined && rawText.length > 0);
+
+      // Check 13: Raw text contains "Modified Maize Starch"
+      check('Raw text contains "Modified Maize Starch"', !!(rawText && rawText.includes('Modified Maize Starch')));
+
+      // Check 14: Raw text contains "E471"
+      check('Raw text contains "E471"', !!(rawText && rawText.includes('E471')));
+
+      // Check 15: parseIngredients(rawText) returns 12 tokens
+      let tokens = null;
+      try { tokens = (ext && ext.parseIngredients) ? ext.parseIngredients(rawText) : null; } catch (e) { /* handled below */ }
+      check('parseIngredients returns 12 tokens', !!(tokens && tokens.length === 12), `got ${tokens ? tokens.length : 'null'}`);
+
+      // Check 16: classifyByIngredients(tokens) returns NOVA 4
+      let classification = null;
+      try { classification = (ext && ext.classifyByIngredients) ? ext.classifyByIngredients(tokens) : null; } catch (e) { /* handled below */ }
+      const novaScore = classification ? classification.score : null;
+      results.novaScore = novaScore;
+      check('classifyByIngredients returns NOVA 4', novaScore === 4, `score=${novaScore}`);
+
+      // Check 17: Confidence ≥ 0.9
+      const novaConfidence = classification ? classification.confidence : null;
+      results.novaConfidence = novaConfidence;
+      check('Confidence ≥ 0.9', !!(novaConfidence !== null && novaConfidence >= 0.9), `confidence=${novaConfidence}`);
+
+      // Check 18: Badge injected after H1 (mainEl.nextElementSibling === mainBadge)
+      let mainBadge = null;
+      let badgeAfterH1 = false;
+      try {
+        if (ext && ext.createBadge && ext.injectBadge && classification && mainEl) {
+          mainBadge = ext.createBadge(classification.score, classification.reason, classification.indicators);
+          ext.injectBadge(mainEl, mainBadge);
+          badgeAfterH1 = mainEl.nextElementSibling === mainBadge;
+        }
+      } catch (e) { /* handled below */ }
+      check('Badge injected after H1 (mainEl.nextElementSibling === mainBadge)', badgeAfterH1);
+
+      // Check 19: Tile has loading badge with class nova-badge-loading
+      let tileHasLoadingBadge = false;
+      try {
+        if (ext && ext.createBadge && ext.setBadgeLoading && ext.injectBadge && tileEl) {
+          const tileBadge = ext.createBadge(1, '', []);
+          ext.setBadgeLoading(tileBadge);
+          ext.injectBadge(tileEl, tileBadge);
+          tileHasLoadingBadge = tileBadge.classList.contains('nova-badge-loading');
+        }
+      } catch (e) { /* handled below */ }
+      check('Tile has loading badge with class nova-badge-loading', tileHasLoadingBadge);
+
+      // -----------------------------------------------------------------
+      // Render summary
+      // -----------------------------------------------------------------
+
+      results.allPass = results.passed === results.total;
+
+      summaryEl.className = results.allPass ? 'all-pass' : 'has-fail';
+      summaryEl.textContent = results.allPass
+        ? `✅ All ${results.total} checks passed`
+        : `❌ ${results.passed}/${results.total} checks passed`;
+
+      rawResultsEl.textContent = JSON.stringify(
+        { passed: results.passed, total: results.total, allPass: results.allPass, novaScore: results.novaScore, novaConfidence: results.novaConfidence },
+        null, 2
+      );
+
+      // Expose results for Chrome DevTools MCP evaluation
+      window.__novaIntegrationResults = {
+        passed: results.passed,
+        total: results.total,
+        allPass: results.allPass,
+        checks: results.checks,
+        novaScore: results.novaScore,
+        novaConfidence: results.novaConfidence,
+      };
+    })();
+  </script>
+
+</body>
+</html>

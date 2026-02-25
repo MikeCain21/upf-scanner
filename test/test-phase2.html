@@ -242,14 +242,14 @@
       // -----------------------------------------------------------------------
       let doc;
       try {
-        const response = await fetch('pages/TescoHotDog.htm');
+        const response = await fetch('pages/HotDogs/TescoHotDog.htm');
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const html = await response.text();
         const parser = new DOMParser();
         doc = parser.parseFromString(html, 'text/html');
       } catch (err) {
         showError(
-          `Could not load pages/TescoHotDog.htm: ${err.message}. ` +
+          `Could not load pages/HotDogs/TescoHotDog.htm: ${err.message}. ` +
           'If running from file://, Chrome may block fetch — try serving with a local HTTP server.'
         );
         setStatus('fail', '❌ Could not load test file');
