@@ -203,6 +203,73 @@ describe('Real product fixtures', () => {
 });
 
 // ---------------------------------------------------------------------------
+// Meat-substitute / plant-based indicators
+// ---------------------------------------------------------------------------
+
+describe('Meat-substitute / plant-based indicators', () => {
+  it('flags Mycoprotein', () => {
+    const { count } = detectIndicators(['Mycoprotein (41%)']);
+    expect(count).toBeGreaterThanOrEqual(1);
+  });
+
+  it('flags Natural Flavouring (UK spelling)', () => {
+    const { count } = detectIndicators(['Natural Flavouring']);
+    expect(count).toBeGreaterThanOrEqual(1);
+  });
+
+  it('flags Natural Flavoring (US spelling)', () => {
+    const { count } = detectIndicators(['Natural Flavoring']);
+    expect(count).toBeGreaterThanOrEqual(1);
+  });
+
+  it('flags Flavourings (plural)', () => {
+    const { count } = detectIndicators(['Natural Flavourings Including Caffeine']);
+    expect(count).toBeGreaterThanOrEqual(1);
+  });
+
+  it('does NOT flag plain Flavour (word only, no -ing suffix)', () => {
+    // "Smoke Flavour" is ambiguous — we only flag explicit additive labelling
+    const { count } = detectIndicators(['Smoke Flavour']);
+    expect(count).toBe(0);
+  });
+
+  it('flags Textured Wheat Protein', () => {
+    const { count } = detectIndicators(['Textured Wheat Protein (Wheat Flour, Stabiliser: Sodium Alginate)']);
+    expect(count).toBeGreaterThanOrEqual(1);
+  });
+
+  it('flags Textured Soy Protein', () => {
+    const { count } = detectIndicators(['Textured Soy Protein']);
+    expect(count).toBeGreaterThanOrEqual(1);
+  });
+
+  // Regression: the Quorn sausage ingredient list that triggered the bug
+  it('Quorn mycoprotein sausages → count ≥ 3 (mycoprotein + flavouring + textured protein)', () => {
+    const tokens = [
+      'Mycoprotein (41%)',
+      'Rehydrated Free Range Egg White',
+      'Vegetable Oils (Rapeseed, Palm)',
+      'Rusk [Wheat Flour (Wheat Flour, Calcium Carbonate, Iron, Niacin, Thiamine), Water, Yeast, Salt]',
+      'Onion',
+      'Natural Flavouring',
+      'Casing (Calcium Alginate)',
+      'Textured Wheat Protein (Wheat Flour, Stabiliser: Sodium Alginate)',
+      'Firming Agents: Calcium Chloride',
+      'Calcium Acetate',
+      'Seasoning [Herbs (Sage, Parsley), Rapeseed Oil]',
+      'Pea Fibre',
+      'Roasted Barley Malt Extract',
+      'Natural Caramelised Sugar',
+    ];
+    const { count, indicators } = detectIndicators(tokens);
+    expect(count).toBeGreaterThanOrEqual(3);
+    expect(indicators).toContain('mycoprotein');
+    expect(indicators).toContain('flavouring');
+    expect(indicators).toContain('textured protein');
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Verification tests (Phase 4 checklist)
 // ---------------------------------------------------------------------------
 
