@@ -75,6 +75,28 @@ function parseApiResponse(data) {
   return data.product || null;
 }
 
+/**
+ * Extracts classification markers for a specific NOVA group from nova_groups_markers.
+ * Cleans tags to human-readable form: "en:e471" → "E471", "glucose-syrup" → "Glucose syrup"
+ *
+ * @param {Object} novaMarkersObj - nova_groups_markers from OFF response
+ * @param {number} novaScore     - The assigned NOVA score
+ * @returns {string[]}           Array of cleaned marker strings
+ */
+function extractNovaMarkers(novaMarkersObj, novaScore) {
+  if (!novaMarkersObj || typeof novaMarkersObj !== 'object') return [];
+  const entries = novaMarkersObj[String(novaScore)] || [];
+  return entries
+    .map(([tag]) => {
+      const clean = tag.replace(/^en:/, '').replace(/-/g, ' ');
+      // E-numbers: uppercase (e471 → E471)
+      if (/^e\d/i.test(clean)) return clean.toUpperCase();
+      // Everything else: capitalise first letter
+      return clean.charAt(0).toUpperCase() + clean.slice(1);
+    })
+    .filter((v, i, arr) => arr.indexOf(v) === i); // deduplicate
+}
+
 // ---------------------------------------------------------------------------
 // Cache helpers (chrome.storage.local)
 // ---------------------------------------------------------------------------
@@ -171,7 +193,7 @@ async function analyzeIngredients(ingredientsText, productId) {
   // Cache check (skip if no productId)
   if (productId) {
     const cached = await getCached('ingredients_' + productId);
-    if (cached) return cached.novaScore;
+    if (cached) return { novaScore: cached.novaScore, markers: cached.markers || [] };
   }
 
   const url = 'https://world.openfoodfacts.org/api/v3/product/test';
@@ -185,7 +207,7 @@ async function analyzeIngredients(ingredientsText, productId) {
       body: JSON.stringify({
         lc: 'en',
         cc: 'gb',
-        fields: 'nova_group,nova_groups_tags',
+        fields: 'nova_group,nova_groups_tags,nova_groups_markers',
         product: {
           lang: 'en',
           ingredients_text_en: ingredientsText,
@@ -195,14 +217,15 @@ async function analyzeIngredients(ingredientsText, productId) {
 
     const data = await response.json();
     const novaScore = data.status === 'success' ? (data.product?.nova_group || null) : null;
+    const markers = extractNovaMarkers(data.product?.nova_groups_markers, novaScore);
 
     // Cache successful result
     if (novaScore && productId) {
-      await setCached('ingredients_' + productId, { novaScore, productName: '' });
+      await setCached('ingredients_' + productId, { novaScore, markers, productName: '' });
     }
 
-    console.log(`[NOVA API] Ingredient analysis → NOVA ${novaScore}`);
-    return novaScore;
+    console.log(`[NOVA API] Ingredient analysis → NOVA ${novaScore}, markers: ${markers.join(', ') || 'none'}`);
+    return { novaScore, markers };
   } catch (err) {
     console.warn('[NOVA API] Ingredient analysis error:', err.message);
     return null;
@@ -297,7 +320,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
 
     analyzeIngredients(ingredientsText, productId || null)
-      .then(novaScore => sendResponse({ success: true, novaScore }))
+      .then(result => sendResponse({
+        success: true,
+        novaScore: result?.novaScore ?? null,
+        markers: result?.markers ?? [],
+      }))
       .catch(err => sendResponse({ success: false, error: err.message }));
 
     return true; // Keeps the message channel open for the async response

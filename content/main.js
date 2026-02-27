@@ -144,7 +144,18 @@
       });
       if (response?.success && response.novaScore) {
         log(`NOVA ${response.novaScore} from OpenFoodFacts ingredient analysis`);
-        return createBadge(response.novaScore, `OpenFoodFacts NOVA ${response.novaScore}`, []);
+        const markers = response.markers || [];
+
+        let reason;
+        if (markers.length > 0) {
+          reason = 'OpenFoodFacts analysis';
+        } else if (response.novaScore <= 2) {
+          reason = 'No processing markers detected';
+        } else {
+          reason = `OpenFoodFacts NOVA ${response.novaScore}`;
+        }
+
+        return createBadge(response.novaScore, reason, markers);
       }
       log('OFF analysis returned no score — falling back to local classifier');
     } catch (err) {
