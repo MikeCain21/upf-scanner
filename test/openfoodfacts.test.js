@@ -10,7 +10,7 @@
  *            npm run test:verbose
  */
 
-const { extractNovaScore, parseApiResponse } = require('../lib/openfoodfacts');
+const { extractNovaScore, parseApiResponse, extractNovaMarkers } = require('../lib/openfoodfacts');
 
 // ---------------------------------------------------------------------------
 // extractNovaScore
@@ -104,5 +104,73 @@ describe('parseApiResponse', () => {
 
   it('returns null when product is null', () => {
     expect(parseApiResponse({ status: 1, product: null })).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// extractNovaMarkers
+// ---------------------------------------------------------------------------
+
+describe('extractNovaMarkers', () => {
+  it('returns [] for null markers object', () => {
+    expect(extractNovaMarkers(null, 4)).toEqual([]);
+  });
+
+  it('returns [] for undefined markers object', () => {
+    expect(extractNovaMarkers(undefined, 4)).toEqual([]);
+  });
+
+  it('returns [] when markers object has no entry for the given score', () => {
+    expect(extractNovaMarkers({}, 4)).toEqual([]);
+  });
+
+  it('returns [] when score does not match markers key (score=3 on NOVA 4 markers)', () => {
+    const markers = { '4': [['ingredients', 'en:glucose']] };
+    expect(extractNovaMarkers(markers, 3)).toEqual([]);
+  });
+
+  it('extracts and uppercases E-numbers (en:e471 → E471)', () => {
+    const markers = { '4': [['additives', 'en:e471']] };
+    expect(extractNovaMarkers(markers, 4)).toEqual(['E471']);
+  });
+
+  it('extracts and capitalises plain ingredients (en:emulsifier → Emulsifier)', () => {
+    const markers = { '4': [['ingredients', 'en:emulsifier']] };
+    expect(extractNovaMarkers(markers, 4)).toEqual(['Emulsifier']);
+  });
+
+  it('replaces hyphens with spaces (en:vegetable-fiber → Vegetable fiber)', () => {
+    const markers = { '4': [['ingredients', 'en:vegetable-fiber']] };
+    expect(extractNovaMarkers(markers, 4)).toEqual(['Vegetable fiber']);
+  });
+
+  it('handles mixed additives and ingredients in one call', () => {
+    const markers = {
+      '4': [
+        ['additives', 'en:e471'],
+        ['ingredients', 'en:emulsifier'],
+      ],
+    };
+    expect(extractNovaMarkers(markers, 4)).toEqual(['E471', 'Emulsifier']);
+  });
+
+  it('handles multiple ingredients markers', () => {
+    const markers = {
+      '4': [
+        ['ingredients', 'en:glucose'],
+        ['ingredients', 'en:fructose'],
+      ],
+    };
+    expect(extractNovaMarkers(markers, 4)).toEqual(['Glucose', 'Fructose']);
+  });
+
+  it('deduplicates repeated tags', () => {
+    const markers = {
+      '4': [
+        ['ingredients', 'en:glucose'],
+        ['ingredients', 'en:glucose'],
+      ],
+    };
+    expect(extractNovaMarkers(markers, 4)).toEqual(['Glucose']);
   });
 });

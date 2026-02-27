@@ -87,7 +87,7 @@ function extractNovaMarkers(novaMarkersObj, novaScore) {
   if (!novaMarkersObj || typeof novaMarkersObj !== 'object') return [];
   const entries = novaMarkersObj[String(novaScore)] || [];
   return entries
-    .map(([tag]) => {
+    .map(([, tag]) => {
       const clean = tag.replace(/^en:/, '').replace(/-/g, ' ');
       // E-numbers: uppercase (e471 → E471)
       if (/^e\d/i.test(clean)) return clean.toUpperCase();
