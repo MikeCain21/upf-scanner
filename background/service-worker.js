@@ -156,6 +156,60 @@ async function fetchProductByBarcode(barcode) {
 }
 
 // ---------------------------------------------------------------------------
+// Ingredient analysis (stateless OFF v3 endpoint)
+// ---------------------------------------------------------------------------
+
+/**
+ * Sends ingredient text to the OpenFoodFacts v3 stateless analysis endpoint
+ * and returns the NOVA group. Uses chrome.storage.local cache keyed by productId.
+ *
+ * @param {string} ingredientsText - Raw ingredient string scraped from the page
+ * @param {string|null} productId  - Tesco product ID used as cache key
+ * @returns {Promise<number|null>}  NOVA score 1–4, or null on failure
+ */
+async function analyzeIngredients(ingredientsText, productId) {
+  // Cache check (skip if no productId)
+  if (productId) {
+    const cached = await getCached('ingredients_' + productId);
+    if (cached) return cached.novaScore;
+  }
+
+  const url = 'https://world.openfoodfacts.org/api/v3/product/test';
+  try {
+    const response = await fetch(url, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'User-Agent': USER_AGENT,
+      },
+      body: JSON.stringify({
+        lc: 'en',
+        cc: 'gb',
+        fields: 'nova_group,nova_groups_tags',
+        product: {
+          lang: 'en',
+          ingredients_text_en: ingredientsText,
+        },
+      }),
+    });
+
+    const data = await response.json();
+    const novaScore = data.status === 'success' ? (data.product?.nova_group || null) : null;
+
+    // Cache successful result
+    if (novaScore && productId) {
+      await setCached('ingredients_' + productId, { novaScore, productName: '' });
+    }
+
+    console.log(`[NOVA API] Ingredient analysis → NOVA ${novaScore}`);
+    return novaScore;
+  } catch (err) {
+    console.warn('[NOVA API] Ingredient analysis error:', err.message);
+    return null;
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Main lookup pipeline: cache → API
 // ---------------------------------------------------------------------------
 
@@ -218,26 +272,39 @@ chrome.runtime.onInstalled.addListener((details) => {
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   console.log('[NOVA Background] Message received:', message.type, 'from', sender.tab?.url);
 
-  if (message.type !== 'FETCH_PRODUCT') {
-    sendResponse({ success: false, error: 'Unknown message type' });
-    return false;
+  if (message.type === 'FETCH_PRODUCT') {
+    const { barcode } = message;
+    if (!barcode) {
+      sendResponse({ success: false, error: 'No barcode provided' });
+      return false;
+    }
+
+    lookupProduct(barcode)
+      .then(result => sendResponse({ success: true, ...result }))
+      .catch(err => {
+        console.error('[NOVA Background] Unexpected error:', err);
+        sendResponse({ success: false, error: err.message });
+      });
+
+    return true; // Keeps the message channel open for the async response
   }
 
-  const { barcode } = message;
-  if (!barcode) {
-    sendResponse({ success: false, error: 'No barcode provided' });
-    return false;
+  if (message.type === 'ANALYZE_INGREDIENTS') {
+    const { ingredientsText, productId } = message;
+    if (!ingredientsText) {
+      sendResponse({ success: false, error: 'No ingredientsText provided' });
+      return false;
+    }
+
+    analyzeIngredients(ingredientsText, productId || null)
+      .then(novaScore => sendResponse({ success: true, novaScore }))
+      .catch(err => sendResponse({ success: false, error: err.message }));
+
+    return true; // Keeps the message channel open for the async response
   }
 
-  // Return true BEFORE the async call to keep the message channel open.
-  lookupProduct(barcode)
-    .then(result => sendResponse({ success: true, ...result }))
-    .catch(err => {
-      console.error('[NOVA Background] Unexpected error:', err);
-      sendResponse({ success: false, error: err.message });
-    });
-
-  return true; // Keeps the message channel open for the async response
+  sendResponse({ success: false, error: 'Unknown message type' });
+  return false;
 });
 
-console.log('[NOVA Background] Service worker ready (Phase 6)');
+console.log('[NOVA Background] Service worker ready (Phase 8)');
