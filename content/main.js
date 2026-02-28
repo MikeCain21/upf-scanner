@@ -129,10 +129,8 @@
 
     const rawText = adapter.extractIngredients(document);
     if (!rawText) {
-      log('No ingredient section found — cannot classify');
-      const badge = document.createElement('span');
-      setBadgeError(badge, 'No ingredient list found for this product.');
-      return badge;
+      log('No ingredient list found — defaulting to NOVA 1 (likely unprocessed whole food)');
+      return createBadge(1, 'No ingredient list — likely unprocessed whole food', []);
     }
 
     // 2. Try OpenFoodFacts ingredient analysis (primary path)
@@ -230,6 +228,8 @@
       return;
     }
 
+    let tilesSkipped = 0;
+
     products.forEach((el, index) => {
       // Skip elements that have already been badged on a previous run.
       if (_badged.has(el)) return;
@@ -247,9 +247,13 @@
       } else {
         // Tile product: no ingredient data and no EAN barcode available.
         // Skip entirely — a missing badge is better than a permanent spinner.
-        log(`  → Tile product skipped (no EAN barcode; Phase 9 resolves)`);
+        tilesSkipped++;
       }
     });
+
+    if (tilesSkipped > 0) {
+      log(`  → ${tilesSkipped} tile product(s) skipped (no EAN barcode)`);
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -306,7 +310,7 @@
    */
   function setupMutationObserver(adapter) {
     const observer = new MutationObserver(
-      debounce(() => detectAndBadge(adapter), 300)
+      debounce(() => detectAndBadge(adapter), 500)
     );
     observer.observe(document.body, { childList: true, subtree: true });
     log('MutationObserver active');
