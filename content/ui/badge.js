@@ -44,7 +44,7 @@
   /** Lazily-created tooltip element, appended to document.body on first use */
   let _tooltipEl = null;
 
-  /** Timer used to delay hiding the tooltip so the flag button remains clickable */
+  /** Timer used to delay hiding the tooltip on mouseleave */
   let _hideTimer = null;
 
   /**
@@ -118,38 +118,21 @@
 
   /**
    * Attaches mouseenter/mouseleave listeners that show/hide the shared tooltip.
-   * Rebuilds tooltip DOM on each hover to support the flag button (reportData).
    *
    * @param {HTMLElement} badgeEl
    * @param {string} tooltipText - Pre-built text to display
-   * @param {{novaScore: number, reason: string, indicators: string[]}|null} [reportData]
-   *   When provided, adds a "Flag as incorrect" button to the tooltip.
    */
-  function _attachTooltip(badgeEl, tooltipText, reportData) {
+  function _attachTooltip(badgeEl, tooltipText) {
     // Pre-create the tooltip element so it exists on document.body from first badge creation
     getTooltip();
     badgeEl.addEventListener('mouseenter', () => {
       const tooltip = getTooltip();
 
-      // Rebuild tooltip content so flag-button state resets on each hover
       tooltip.innerHTML = '';
       const textNode = document.createElement('span');
       textNode.className = 'nova-tooltip-text';
       textNode.textContent = tooltipText;
       tooltip.appendChild(textNode);
-
-      if (reportData) {
-        const flagBtn = document.createElement('button');
-        flagBtn.className = 'nova-tooltip-flag';
-        flagBtn.textContent = '⚑ Flag as incorrect';
-        flagBtn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          console.log('[NOVA Report] User flagged incorrect classification:', reportData);
-          flagBtn.textContent = '✓ Flagged';
-          flagBtn.disabled = true;
-        });
-        tooltip.appendChild(flagBtn);
-      }
 
       clearTimeout(_hideTimer);
       _showTooltip(tooltip, badgeEl);
@@ -180,7 +163,7 @@
     badge.setAttribute('aria-label', `NOVA ${novaScore} - ${NOVA_LABELS[novaScore] || 'unknown'}`);
 
     const tooltipText = _buildTooltipText(novaScore, reason, indicators);
-    _attachTooltip(badge, tooltipText, { novaScore, reason, indicators });
+    _attachTooltip(badge, tooltipText);
 
     return badge;
   }
