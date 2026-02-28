@@ -37,6 +37,9 @@ test/pages/**/*_files/
 # Claude Code local settings
 .claude/
 
+# Git worktrees (isolated development workspaces)
+.worktrees/
+
 # Environment variables (if ever needed)
 .env
 .env.local
