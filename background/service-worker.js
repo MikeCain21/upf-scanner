@@ -330,8 +330,20 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true; // Keeps the message channel open for the async response
   }
 
+  if (message.type === 'CLEAR_CACHE') {
+    chrome.storage.local.get(null, (allData) => {
+      const cacheKeys = Object.keys(allData).filter(k =>
+        k.startsWith('product_') || k.startsWith('ingredients_') || k.startsWith(CACHE_PREFIX)
+      );
+      chrome.storage.local.remove(cacheKeys, () => {
+        sendResponse({ cleared: cacheKeys.length });
+      });
+    });
+    return true; // async
+  }
+
   sendResponse({ success: false, error: 'Unknown message type' });
   return false;
 });
 
-console.log('[NOVA Background] Service worker ready (Phase 8)');
+console.log('[NOVA Background] Service worker ready (Phase 10)');

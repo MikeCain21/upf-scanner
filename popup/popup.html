@@ -59,7 +59,7 @@
 
     .message {
       text-align: center;
-      padding: 20px;
+      padding: 12px 0;
       color: #666;
       font-size: 13px;
       line-height: 1.6;
@@ -88,6 +88,15 @@
       cursor: not-allowed;
     }
 
+    .toggle-row {
+      margin-top: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: #555;
+    }
+
     .links {
       margin-top: 20px;
       padding-top: 15px;
@@ -109,7 +118,7 @@
 </head>
 <body>
   <h1>🔴 NOVA Extension</h1>
-  <div class="version">Version 0.1.0 - Phase 1</div>
+  <div class="version">Version 0.9.0 — Phase 10</div>
 
   <div class="status">
     <div class="status-item">
@@ -127,18 +136,21 @@
   </div>
 
   <div class="message">
-    <p><strong>Phase 1 - Setup Complete</strong></p>
-    <p style="margin-top: 10px;">Extension is ready for testing. Visit Tesco.com to see NOVA ratings on products.</p>
-    <p style="margin-top: 10px; font-size: 12px; color: #999;">Full functionality coming in later phases.</p>
+    Active on Tesco.com — hover badges for details.
   </div>
 
-  <button class="button" id="clearCache" disabled title="Coming in Phase 6">
+  <button class="button" id="clearCache">
     Clear Cache
   </button>
 
+  <label class="toggle-row">
+    <input type="checkbox" id="debugMode">
+    Debug mode (verbose console logging)
+  </label>
+
   <div class="links">
-    <a href="#" id="viewDocs">📚 View Documentation</a>
-    <a href="#" id="reportIssue">🐛 Report Issue</a>
+    <a href="https://world.openfoodfacts.org/nova" target="_blank">📚 NOVA Classification Guide</a>
+    <a href="https://github.com" target="_blank">🐛 Report Issue (GitHub)</a>
   </div>
 
   <script src="popup.js"></script>

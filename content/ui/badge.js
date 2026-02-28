@@ -11,7 +11,7 @@
  *   setBadgeError(badgeEl, message)            → void
  *   injectBadge(productEl, badgeEl)            → void
  *
- * @version 0.7.0
+ * @version 0.9.0
  */
 
 (function () {
@@ -44,6 +44,9 @@
   /** Lazily-created tooltip element, appended to document.body on first use */
   let _tooltipEl = null;
 
+  /** Timer used to delay hiding the tooltip so the flag button remains clickable */
+  let _hideTimer = null;
+
   /**
    * Returns the shared tooltip element, creating it on first call.
    * @returns {HTMLElement}
@@ -53,6 +56,9 @@
       _tooltipEl = document.createElement('div');
       _tooltipEl.className = 'nova-tooltip';
       _tooltipEl.style.display = 'none';
+      // Keep tooltip alive on mouseenter so the flag button can be clicked.
+      _tooltipEl.addEventListener('mouseenter', () => clearTimeout(_hideTimer));
+      _tooltipEl.addEventListener('mouseleave', () => { _tooltipEl.style.display = 'none'; });
       document.body.appendChild(_tooltipEl);
     }
     return _tooltipEl;
@@ -75,11 +81,14 @@
   }
 
   /**
-   * Hides the tooltip.
+   * Schedules tooltip hiding with a short delay.
+   * The delay gives the mouse time to move from the badge into the tooltip
+   * without triggering a hide (needed because pointer-events is enabled).
    * @param {HTMLElement} tooltip
    */
-  function _hideTooltip(tooltip) {
-    tooltip.style.display = 'none';
+  function _scheduleHideTooltip(tooltip) {
+    clearTimeout(_hideTimer);
+    _hideTimer = setTimeout(() => { tooltip.style.display = 'none'; }, 120);
   }
 
   // ---------------------------------------------------------------------------
@@ -109,21 +118,45 @@
 
   /**
    * Attaches mouseenter/mouseleave listeners that show/hide the shared tooltip.
+   * Rebuilds tooltip DOM on each hover to support the flag button (reportData).
    *
    * @param {HTMLElement} badgeEl
-   * @param {string} tooltipText - Text to show on hover
+   * @param {string} tooltipText - Pre-built text to display
+   * @param {{novaScore: number, reason: string, indicators: string[]}|null} [reportData]
+   *   When provided, adds a "Flag as incorrect" button to the tooltip.
    */
-  function _attachTooltip(badgeEl, tooltipText) {
+  function _attachTooltip(badgeEl, tooltipText, reportData) {
     // Pre-create the tooltip element so it exists on document.body from first badge creation
     getTooltip();
     badgeEl.addEventListener('mouseenter', () => {
       const tooltip = getTooltip();
-      tooltip.textContent = tooltipText;
+
+      // Rebuild tooltip content so flag-button state resets on each hover
+      tooltip.innerHTML = '';
+      const textNode = document.createElement('span');
+      textNode.className = 'nova-tooltip-text';
+      textNode.textContent = tooltipText;
+      tooltip.appendChild(textNode);
+
+      if (reportData) {
+        const flagBtn = document.createElement('button');
+        flagBtn.className = 'nova-tooltip-flag';
+        flagBtn.textContent = '⚑ Flag as incorrect';
+        flagBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          console.log('[NOVA Report] User flagged incorrect classification:', reportData);
+          flagBtn.textContent = '✓ Flagged';
+          flagBtn.disabled = true;
+        });
+        tooltip.appendChild(flagBtn);
+      }
+
+      clearTimeout(_hideTimer);
       _showTooltip(tooltip, badgeEl);
     });
 
     badgeEl.addEventListener('mouseleave', () => {
-      _hideTooltip(getTooltip());
+      _scheduleHideTooltip(getTooltip());
     });
   }
 
@@ -147,7 +180,7 @@
     badge.setAttribute('aria-label', `NOVA ${novaScore} - ${NOVA_LABELS[novaScore] || 'unknown'}`);
 
     const tooltipText = _buildTooltipText(novaScore, reason, indicators);
-    _attachTooltip(badge, tooltipText);
+    _attachTooltip(badge, tooltipText, { novaScore, reason, indicators });
 
     return badge;
   }
