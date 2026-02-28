@@ -11,24 +11,8 @@
   'use strict';
 
   // DOM elements
-  const scannedElement = document.getElementById('scanned');
-  const nova4Element = document.getElementById('nova4');
   const clearCacheButton = document.getElementById('clearCache');
   const debugModeCheckbox = document.getElementById('debugMode');
-
-  // ---------------------------------------------------------------------------
-  // Stats
-  // ---------------------------------------------------------------------------
-
-  /**
-   * Loads lifetime statistics from storage and updates the popup display.
-   */
-  function loadStats() {
-    chrome.storage.local.get(['productsScanned', 'nova4Count'], (data) => {
-      scannedElement.textContent = data.productsScanned || 0;
-      nova4Element.textContent = data.nova4Count || 0;
-    });
-  }
 
   // ---------------------------------------------------------------------------
   // Debug toggle
@@ -72,6 +56,5 @@
   // Initialise
   // ---------------------------------------------------------------------------
 
-  loadStats();
   loadDebugMode();
 })();

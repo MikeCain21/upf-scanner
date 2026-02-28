@@ -104,24 +104,6 @@
   }
 
   // ---------------------------------------------------------------------------
-  // Statistics tracking
-  // ---------------------------------------------------------------------------
-
-  /**
-   * Increments lifetime statistics in chrome.storage.local.
-   * Fires-and-forgets — never blocks badge injection.
-   * @param {number} novaScore
-   */
-  function updateStats(novaScore) {
-    chrome.storage.local.get(['productsScanned', 'nova4Count'], (data) => {
-      chrome.storage.local.set({
-        productsScanned: (data.productsScanned || 0) + 1,
-        nova4Count: novaScore === 4 ? (data.nova4Count || 0) + 1 : (data.nova4Count || 0),
-      });
-    });
-  }
-
-  // ---------------------------------------------------------------------------
   // Classification + badge helpers
   // ---------------------------------------------------------------------------
 
@@ -148,7 +130,6 @@
     const rawText = adapter.extractIngredients(document);
     if (!rawText) {
       log('No ingredient list found — defaulting to NOVA 1 (likely unprocessed whole food)');
-      updateStats(1);
       return createBadge(1, 'No ingredient list — likely unprocessed whole food', []);
     }
 
@@ -172,7 +153,6 @@
           reason = `OpenFoodFacts NOVA ${response.novaScore}`;
         }
 
-        updateStats(response.novaScore);
         return createBadge(response.novaScore, reason, markers);
       }
       log('OFF analysis returned no score — falling back to local classifier');
@@ -218,7 +198,6 @@
       log('Indicators:', result.indicators);
     }
 
-    updateStats(result.score);
     return createBadge(result.score, result.reason, result.indicators || []);
   }
 
