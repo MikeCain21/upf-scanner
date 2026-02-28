@@ -247,3 +247,38 @@ describe('Phase 5 verification checklist', () => {
     expect(result.confidence).toBeLessThanOrEqual(1);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Phase 10: NOVA 2 culinary + NOVA 3 processing markers (BUG-001)
+// ---------------------------------------------------------------------------
+
+describe('Phase 10: NOVA 2 single culinary ingredient + NOVA 3 processing markers', () => {
+  it('Sunflower Oil (single culinary ingredient) → NOVA 2', () => {
+    expect(classifyByIngredients(['Sunflower Oil']).score).toBe(2);
+  });
+
+  it('Sugar (single culinary ingredient) → NOVA 2', () => {
+    expect(classifyByIngredients(['Sugar']).score).toBe(2);
+  });
+
+  it('Salt (single culinary ingredient) → NOVA 2', () => {
+    expect(classifyByIngredients(['Salt']).score).toBe(2);
+  });
+
+  it('Egg (single non-culinary ingredient) → NOVA 1', () => {
+    expect(classifyByIngredients(['Egg']).score).toBe(1);
+  });
+
+  it('Cheddar (milk, salt, cheese cultures, rennet) → NOVA 3 via processing markers', () => {
+    const tokens = ['Milk', 'Salt', 'Cheese Cultures', 'Rennet'];
+    expect(classifyByIngredients(tokens).score).toBe(3);
+  });
+
+  it('Smoked salmon (salmon, smoked) → NOVA 3 via processing markers', () => {
+    expect(classifyByIngredients(['Salmon', 'Smoked']).score).toBe(3);
+  });
+
+  it('Sauerkraut (cabbage, salt, lacto-fermented) → NOVA 3 via processing markers', () => {
+    expect(classifyByIngredients(['Cabbage', 'Salt', 'Lacto-fermented']).score).toBe(3);
+  });
+});

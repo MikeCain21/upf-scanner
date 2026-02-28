@@ -18,17 +18,17 @@
  *   - WeakSet prevents duplicate badges across re-runs
  *   - Tile products are skipped (Tesco IDs ≠ EAN barcodes; resolved in Phase 9)
  *
- * @version 0.8.0
- * @phase 8 - SPA navigation + API wiring
+ * @version 0.9.0
+ * @phase 10 - Production polish, stats tracking, debug-from-storage
  */
 
 (function () {
   'use strict';
 
   const CONFIG = {
-    DEBUG: true,
-    VERSION: '0.8.0',
-    PHASE: 8,
+    DEBUG: false, // Default off; loaded from storage in init()
+    VERSION: '0.9.0',
+    PHASE: 10,
   };
 
   // ---------------------------------------------------------------------------
@@ -104,6 +104,24 @@
   }
 
   // ---------------------------------------------------------------------------
+  // Statistics tracking
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Increments lifetime statistics in chrome.storage.local.
+   * Fires-and-forgets — never blocks badge injection.
+   * @param {number} novaScore
+   */
+  function updateStats(novaScore) {
+    chrome.storage.local.get(['productsScanned', 'nova4Count'], (data) => {
+      chrome.storage.local.set({
+        productsScanned: (data.productsScanned || 0) + 1,
+        nova4Count: novaScore === 4 ? (data.nova4Count || 0) + 1 : (data.nova4Count || 0),
+      });
+    });
+  }
+
+  // ---------------------------------------------------------------------------
   // Classification + badge helpers
   // ---------------------------------------------------------------------------
 
@@ -130,6 +148,7 @@
     const rawText = adapter.extractIngredients(document);
     if (!rawText) {
       log('No ingredient list found — defaulting to NOVA 1 (likely unprocessed whole food)');
+      updateStats(1);
       return createBadge(1, 'No ingredient list — likely unprocessed whole food', []);
     }
 
@@ -153,6 +172,7 @@
           reason = `OpenFoodFacts NOVA ${response.novaScore}`;
         }
 
+        updateStats(response.novaScore);
         return createBadge(response.novaScore, reason, markers);
       }
       log('OFF analysis returned no score — falling back to local classifier');
@@ -198,6 +218,7 @@
       log('Indicators:', result.indicators);
     }
 
+    updateStats(result.score);
     return createBadge(result.score, result.reason, result.indicators || []);
   }
 
@@ -322,8 +343,14 @@
 
   /**
    * Initialises the extension.
+   * Loads debug preference from storage before first MutationObserver fire.
    */
   function init() {
+    // Load debug preference from storage (takes effect before first MutationObserver fire).
+    chrome.storage.local.get(['debugMode'], (data) => {
+      CONFIG.DEBUG = !!data.debugMode;
+    });
+
     log(`Extension loaded — Version ${CONFIG.VERSION}, Phase ${CONFIG.PHASE}`);
 
     const adapter = findAdapter();

@@ -74,7 +74,7 @@
   cursor: help;
 }
 
-/* Tooltip (implemented in Phase 7) */
+/* Tooltip */
 .nova-tooltip {
   position: fixed;
   background-color: rgba(0, 0, 0, 0.9);
@@ -85,10 +85,29 @@
   line-height: 1.5;
   max-width: 300px;
   z-index: 10000;
-  pointer-events: none;
+  pointer-events: auto;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   white-space: pre-wrap;
 }
+
+.nova-tooltip-text {
+  display: block;
+}
+
+/* "Flag as incorrect" button inside tooltip */
+.nova-tooltip-flag {
+  display: block;
+  margin-top: 8px;
+  font-size: 11px;
+  color: #aaa;
+  background: none;
+  border: 1px solid #555;
+  border-radius: 3px;
+  padding: 2px 6px;
+  cursor: pointer;
+}
+.nova-tooltip-flag:hover { color: #fff; border-color: #fff; }
+.nova-tooltip-flag:disabled { opacity: 0.5; cursor: default; }
 
 .nova-tooltip::after {
   content: '';

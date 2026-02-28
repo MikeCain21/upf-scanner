@@ -1,85 +1,77 @@
 /**
  * NOVA Extension - Popup Script
  *
- * Handles extension popup UI and user interactions
+ * Handles extension popup UI: stats display, clear cache, debug toggle.
  *
- * @version 0.1.0
- * @phase 1 - Basic placeholder (full implementation in Phase 10)
+ * @version 0.9.0
+ * @phase 10 - Production popup
  */
 
 (function() {
   'use strict';
 
-  console.log('[NOVA Popup] Loaded');
-
   // DOM elements
-  const statusElement = document.getElementById('status');
   const scannedElement = document.getElementById('scanned');
   const nova4Element = document.getElementById('nova4');
   const clearCacheButton = document.getElementById('clearCache');
-  const viewDocsLink = document.getElementById('viewDocs');
-  const reportIssueLink = document.getElementById('reportIssue');
+  const debugModeCheckbox = document.getElementById('debugMode');
+
+  // ---------------------------------------------------------------------------
+  // Stats
+  // ---------------------------------------------------------------------------
 
   /**
-   * Load statistics from storage (placeholder for Phase 10)
+   * Loads lifetime statistics from storage and updates the popup display.
    */
-  async function loadStats() {
-    try {
-      const stats = await chrome.storage.local.get(['productsScanned', 'nova4Count']);
-
-      if (stats.productsScanned !== undefined) {
-        scannedElement.textContent = stats.productsScanned;
-      }
-
-      if (stats.nova4Count !== undefined) {
-        nova4Element.textContent = stats.nova4Count;
-      }
-
-      console.log('[NOVA Popup] Stats loaded', stats);
-    } catch (error) {
-      console.error('[NOVA Popup] Error loading stats', error);
-    }
+  function loadStats() {
+    chrome.storage.local.get(['productsScanned', 'nova4Count'], (data) => {
+      scannedElement.textContent = data.productsScanned || 0;
+      nova4Element.textContent = data.nova4Count || 0;
+    });
   }
 
+  // ---------------------------------------------------------------------------
+  // Debug toggle
+  // ---------------------------------------------------------------------------
+
   /**
-   * Clear cache (to be implemented in Phase 6)
+   * Loads the saved debug mode state into the checkbox.
+   */
+  function loadDebugMode() {
+    chrome.storage.local.get(['debugMode'], (data) => {
+      debugModeCheckbox.checked = !!data.debugMode;
+    });
+  }
+
+  debugModeCheckbox.addEventListener('change', (e) => {
+    chrome.storage.local.set({ debugMode: e.target.checked });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Clear cache
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Sends CLEAR_CACHE message to service worker and updates button text.
    */
   function clearCache() {
-    console.log('[NOVA Popup] Clear cache clicked (not yet implemented)');
-    // Will be implemented in Phase 6
-    alert('Cache clearing will be implemented in Phase 6');
+    clearCacheButton.disabled = true;
+    clearCacheButton.textContent = 'Clearing…';
+    chrome.runtime.sendMessage({ type: 'CLEAR_CACHE' }, (response) => {
+      clearCacheButton.textContent = `Cleared (${response?.cleared ?? 0} entries)`;
+      setTimeout(() => {
+        clearCacheButton.disabled = false;
+        clearCacheButton.textContent = 'Clear Cache';
+      }, 2000);
+    });
   }
 
-  /**
-   * Open documentation
-   */
-  function openDocs() {
-    console.log('[NOVA Popup] Opening documentation');
-    // For now, just log. Could open README or GitHub in future
-    alert('Documentation: See README.md in extension folder');
-  }
-
-  /**
-   * Open issue reporting
-   */
-  function reportIssue() {
-    console.log('[NOVA Popup] Opening issue reporting');
-    alert('Issue reporting will be available when project is on GitHub');
-  }
-
-  // Event listeners
   clearCacheButton.addEventListener('click', clearCache);
-  viewDocsLink.addEventListener('click', (e) => {
-    e.preventDefault();
-    openDocs();
-  });
-  reportIssueLink.addEventListener('click', (e) => {
-    e.preventDefault();
-    reportIssue();
-  });
 
-  // Initialize
+  // ---------------------------------------------------------------------------
+  // Initialise
+  // ---------------------------------------------------------------------------
+
   loadStats();
-
-  console.log('[NOVA Popup] Ready');
+  loadDebugMode();
 })();
