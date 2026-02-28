@@ -41,10 +41,22 @@
     // Canonical URL tag — used to extract main product ID from saved pages
     CANONICAL: 'link[rel="canonical"]',
 
-    // Ingredient text on PDP — stable panel ID + adjacent sibling combinator avoids
-    // relying on Tesco's obfuscated class names (e.g. OobGYfu9hvCUvH6) which change
-    // between site rebuilds. The panel ID "ingredients-panel" is semantically stable.
-    INGREDIENT_TEXT: '#accordion-panel-ingredients-panel h3 + div',
+    // Ingredient text on PDP — multiple selectors tried in priority order so that
+    // future Tesco layout changes degrade gracefully rather than silently failing.
+    // See extractIngredients() for the fallback logic.
+    //
+    // Selector rationale:
+    //   1. Original: stable accordion panel ID + adjacent-sibling h3+div
+    //   2. Partial-ID: catches any panel whose id contains "ingredients-panel"
+    //      (handles Tesco renaming the prefix, e.g. from "accordion-panel-" to "panel-")
+    //   3. data-testid hook: Tesco uses data-testid="accordion-panel" for all panels;
+    //      combining with id*="ingredient" narrows to the ingredients panel
+    //   4. Direct-child: panel > content-wrapper > first-div (structure-based fallback
+    //      that avoids relying on h3 presence when the heading may be hidden)
+    INGREDIENT_TEXT:   '#accordion-panel-ingredients-panel h3 + div',
+    INGREDIENT_TEXT_F1: '[id*="ingredients-panel"] h3 + div',
+    INGREDIENT_TEXT_F2: '[data-testid="accordion-panel"][id*="ingredient"] h3 + div',
+    INGREDIENT_TEXT_F3: '[id*="ingredients-panel"] > div > div:first-of-type',
   };
 
   /** Pattern to extract a numeric product ID from a Tesco product URL */
@@ -179,16 +191,26 @@
 
     /**
      * Extracts the raw ingredient text from a Tesco product detail page.
-     * Uses the stable accordion panel ID and an adjacent-sibling combinator
-     * to locate the ingredient div without relying on obfuscated class names.
-     * Returns null gracefully when no ingredient section is found (e.g. on
-     * listing pages or for products without ingredient information).
+     * Tries four selectors in priority order so that future Tesco layout
+     * changes degrade gracefully rather than silently returning null.
+     * Returns null when no ingredient section is found (e.g. listing pages,
+     * products without ingredient information).
      *
      * @param {Document} doc - The document to inspect
      * @returns {string|null} Raw ingredient text, or null if unavailable
      */
     extractIngredients(doc) {
-      const el = doc.querySelector(SELECTORS.INGREDIENT_TEXT);
+      const candidates = [
+        doc.querySelector(SELECTORS.INGREDIENT_TEXT),   // primary
+        doc.querySelector(SELECTORS.INGREDIENT_TEXT_F1), // fallback 1: partial id
+        doc.querySelector(SELECTORS.INGREDIENT_TEXT_F2), // fallback 2: data-testid
+        doc.querySelector(SELECTORS.INGREDIENT_TEXT_F3), // fallback 3: direct child
+      ];
+      // Accept the first element that has meaningful text (>10 chars avoids
+      // accidentally matching an empty div or the heading element itself)
+      const el = candidates.find(
+        (candidate) => candidate && candidate.textContent.trim().length > 10
+      );
       if (!el) return null;
       // textContent automatically strips <strong> allergen markers — no extra
       // processing needed. Trim to remove leading/trailing whitespace.
