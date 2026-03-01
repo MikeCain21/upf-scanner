@@ -26,7 +26,7 @@
   'use strict';
 
   const CONFIG = {
-    DEBUG: false, // Default off; loaded from storage in init()
+    DEBUG: true, // Temporary: forced on for diagnosis
     VERSION: '0.9.0',
     PHASE: 10,
   };

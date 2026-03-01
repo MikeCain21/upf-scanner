@@ -219,6 +219,11 @@
         doc.querySelector(SELECTORS.INGREDIENT_TEXT_F3), // fallback 3: data-testid product-desc
         doc.querySelector(SELECTORS.INGREDIENT_TEXT_F4), // fallback 4: old h3+div (saved pages)
       ];
+      // Temporary diagnostic logging — remove after confirming selectors work
+      candidates.forEach((c, i) => {
+        const text = c?.textContent?.trim() ?? '';
+        console.log(`[NOVA] selector[${i}]: found=${!!c} len=${text.length} preview="${text.slice(0, 60)}"`);
+      });
       // Accept the first element that has meaningful text (>10 chars avoids
       // accidentally matching an empty div or the heading element itself)
       const el = candidates.find(
