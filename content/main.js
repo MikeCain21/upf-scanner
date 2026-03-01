@@ -26,7 +26,7 @@
   'use strict';
 
   const CONFIG = {
-    DEBUG: true, // Temporary: forced on for diagnosis
+    DEBUG: false, // Default off; loaded from storage in init()
     VERSION: '0.9.0',
     PHASE: 10,
   };
@@ -119,86 +119,70 @@
   async function classifyMainProduct(adapter, productId) {
     const { createBadge, setBadgeError } = window.__novaExt;
 
-    // 1. Extract raw ingredient text
-    if (typeof adapter.extractIngredients !== 'function') {
-      log('Adapter does not support ingredient extraction');
-      const badge = document.createElement('span');
-      setBadgeError(badge, 'Ingredient extraction not supported for this site.');
-      return badge;
+    // 1. Barcode lookup (primary) — reads gtin13 from JSON-LD, queries OFF
+    if (typeof adapter.extractBarcode === 'function') {
+      const barcode = adapter.extractBarcode(document);
+      if (barcode) {
+        log(`Barcode found: ${barcode}`);
+        try {
+          const response = await chrome.runtime.sendMessage({
+            type: 'FETCH_PRODUCT',
+            barcode,
+          });
+          if (response?.success && response.novaScore) {
+            log(`NOVA ${response.novaScore} from barcode lookup (${response.source})`);
+            return createBadge(response.novaScore, `OpenFoodFacts (barcode ${barcode})`, []);
+          }
+          log(`Barcode lookup returned no NOVA score (${response?.source}) — trying ingredients`);
+        } catch (err) {
+          log('Barcode lookup failed — trying ingredients', err.message);
+        }
+      } else {
+        log('No barcode found in page — trying ingredients');
+      }
     }
 
-    const rawText = adapter.extractIngredients(document);
-    if (!rawText) {
-      log('No ingredient list found — defaulting to NOVA 1 (likely unprocessed whole food)');
-      return createBadge(1, 'No ingredient list — likely unprocessed whole food', []);
-    }
-
-    // 2. Try OpenFoodFacts ingredient analysis (primary path)
-    try {
-      const response = await chrome.runtime.sendMessage({
-        type: 'ANALYZE_INGREDIENTS',
-        ingredientsText: rawText,
-        productId,
-      });
-      if (response?.success && response.novaScore) {
-        log(`NOVA ${response.novaScore} from OpenFoodFacts ingredient analysis`);
-        const markers = response.markers || [];
-
-        let reason;
-        if (markers.length > 0) {
-          reason = 'OpenFoodFacts analysis';
-        } else if (response.novaScore <= 2) {
-          reason = 'No processing markers detected';
-        } else {
-          reason = `OpenFoodFacts NOVA ${response.novaScore}`;
+    // 2. Ingredient text → OFF ingredient analysis (secondary)
+    if (typeof adapter.extractIngredients === 'function') {
+      const rawText = adapter.extractIngredients(document);
+      if (rawText) {
+        log('Ingredient text found — sending to OFF analysis');
+        try {
+          const response = await chrome.runtime.sendMessage({
+            type: 'ANALYZE_INGREDIENTS',
+            ingredientsText: rawText,
+            productId,
+          });
+          if (response?.success && response.novaScore) {
+            log(`NOVA ${response.novaScore} from OFF ingredient analysis`);
+            return createBadge(response.novaScore, 'OpenFoodFacts ingredient analysis', response.markers || []);
+          }
+          log('OFF ingredient analysis returned no score — trying local classifier');
+        } catch (err) {
+          log('OFF ingredient analysis failed — trying local classifier', err.message);
         }
 
-        return createBadge(response.novaScore, reason, markers);
+        // 3. Local rule-based classifier (tertiary)
+        const parseIngredients = window.__novaExt?.parseIngredients;
+        const classifyByIngredients = window.__novaExt?.classifyByIngredients;
+        if (typeof parseIngredients === 'function' && typeof classifyByIngredients === 'function') {
+          const ingredients = parseIngredients(rawText);
+          if (ingredients && ingredients.length > 0) {
+            const result = classifyByIngredients(ingredients);
+            if (result) {
+              log(`NOVA ${result.score} from local classifier (confidence: ${result.confidence})`);
+              return createBadge(result.score, result.reason, result.indicators || []);
+            }
+          }
+        }
       }
-      log('OFF analysis returned no score — falling back to local classifier');
-    } catch (err) {
-      log('OFF message failed — falling back to local classifier', err.message);
     }
 
-    // 3. Local rule-based classifier (fallback)
-    const parseIngredients = window.__novaExt?.parseIngredients;
-    if (typeof parseIngredients !== 'function') {
-      log('ingredient-parser not available');
-      const badge = document.createElement('span');
-      setBadgeError(badge, 'Ingredient parser unavailable.');
-      return badge;
-    }
-
-    const ingredients = parseIngredients(rawText);
-    if (!ingredients || ingredients.length === 0) {
-      log('Ingredient list is empty after parsing');
-      const badge = document.createElement('span');
-      setBadgeError(badge, 'Ingredient list is empty.');
-      return badge;
-    }
-
-    const classifyByIngredients = window.__novaExt?.classifyByIngredients;
-    if (typeof classifyByIngredients !== 'function') {
-      log('nova-classifier not available');
-      const badge = document.createElement('span');
-      setBadgeError(badge, 'NOVA classifier unavailable.');
-      return badge;
-    }
-
-    const result = classifyByIngredients(ingredients);
-    if (!result) {
-      log('Classifier returned null');
-      const badge = document.createElement('span');
-      setBadgeError(badge, 'Classification failed.');
-      return badge;
-    }
-
-    log(`NOVA ${result.score} (local, confidence: ${result.confidence}) — ${result.reason}`);
-    if (result.indicators && result.indicators.length > 0) {
-      log('Indicators:', result.indicators);
-    }
-
-    return createBadge(result.score, result.reason, result.indicators || []);
+    // 4. All sources exhausted — show "?" badge
+    log('No classification data available — showing unknown badge');
+    const badge = document.createElement('span');
+    setBadgeError(badge, 'Ingredient data not available for this product');
+    return badge;
   }
 
   // ---------------------------------------------------------------------------

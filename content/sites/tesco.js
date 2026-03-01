@@ -219,11 +219,6 @@
         doc.querySelector(SELECTORS.INGREDIENT_TEXT_F3), // fallback 3: data-testid product-desc
         doc.querySelector(SELECTORS.INGREDIENT_TEXT_F4), // fallback 4: old h3+div (saved pages)
       ];
-      // Temporary diagnostic logging — remove after confirming selectors work
-      candidates.forEach((c, i) => {
-        const text = c?.textContent?.trim() ?? '';
-        console.log(`[NOVA] selector[${i}]: found=${!!c} len=${text.length} preview="${text.slice(0, 60)}"`);
-      });
       // Accept the first element that has meaningful text (>10 chars avoids
       // accidentally matching an empty div or the heading element itself)
       const el = candidates.find(
@@ -234,6 +229,26 @@
       // processing needed. Trim to remove leading/trailing whitespace.
       const raw = el.textContent.trim();
       return raw.length > 0 ? raw : null;
+    },
+
+    /**
+     * Extracts the EAN-13 barcode from the page's JSON-LD Product schema.
+     * Tesco embeds gtin13 in a <script type="application/ld+json"> tag.
+     *
+     * @param {Document} doc
+     * @returns {string|null} EAN-13 barcode string, or null if unavailable
+     */
+    extractBarcode(doc) {
+      try {
+        const script = doc.querySelector('script[type="application/ld+json"]');
+        if (!script) return null;
+        const graph = JSON.parse(script.textContent)?.['@graph'];
+        if (!Array.isArray(graph)) return null;
+        const product = graph.find(g => g['@type'] === 'Product');
+        return product?.gtin13 || null;
+      } catch {
+        return null;
+      }
     },
   };
 
