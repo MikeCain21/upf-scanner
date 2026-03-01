@@ -45,18 +45,23 @@
     // future Tesco layout changes degrade gracefully rather than silently failing.
     // See extractIngredients() for the fallback logic.
     //
-    // Selector rationale:
-    //   1. Original: stable accordion panel ID + adjacent-sibling h3+div
-    //   2. Partial-ID: catches any panel whose id contains "ingredients-panel"
-    //      (handles Tesco renaming the prefix, e.g. from "accordion-panel-" to "panel-")
-    //   3. data-testid hook: Tesco uses data-testid="accordion-panel" for all panels;
-    //      combining with id*="ingredient" narrows to the ingredients panel
-    //   4. Direct-child: panel > content-wrapper > first-div (structure-based fallback
-    //      that avoids relying on h3 presence when the heading may be hidden)
-    INGREDIENT_TEXT:   '#accordion-panel-ingredients-panel h3 + div',
-    INGREDIENT_TEXT_F1: '[id*="ingredients-panel"] h3 + div',
-    INGREDIENT_TEXT_F2: '[data-testid="accordion-panel"][id*="ingredient"] h3 + div',
-    INGREDIENT_TEXT_F3: '[id*="ingredients-panel"] > div > div:first-of-type',
+    // Two-panel strategy (as of 2026-03-01 Tesco redesign):
+    //   Tesco moved ingredient text from #accordion-panel-ingredients-panel to
+    //   #accordion-panel-product-description. The old panel now holds Nutrition
+    //   and Dietary info only.
+    //
+    //   For complex products (bread, yoghurt, crisps): PRIMARY finds the full
+    //   ingredient list (100s chars) in the ingredients panel and passes.
+    //   For simple products (sunflower oil, plain cheddar): PRIMARY returns only
+    //   "Vegan" or similar (~5 chars) which fails the >10 char length filter,
+    //   so F1 (product-description panel) returns the actual ingredient.
+    //   F2/F3 are data-testid variants that survive panel ID prefix renames.
+    //   F4 is the old h3+div pattern for saved test pages and Tesco rollbacks.
+    INGREDIENT_TEXT:    '#accordion-panel-ingredients-panel .UKSL9q_content > div',
+    INGREDIENT_TEXT_F1: '#accordion-panel-product-description .UKSL9q_content > div',
+    INGREDIENT_TEXT_F2: '[data-testid="accordion-panel"][id*="ingredients"] .UKSL9q_content > div',
+    INGREDIENT_TEXT_F3: '[data-testid="accordion-panel"][id*="product-description"] .UKSL9q_content > div',
+    INGREDIENT_TEXT_F4: '#accordion-panel-ingredients-panel h3 + div',
   };
 
   /** Pattern to extract a numeric product ID from a Tesco product URL */
@@ -191,8 +196,15 @@
 
     /**
      * Extracts the raw ingredient text from a Tesco product detail page.
-     * Tries four selectors in priority order so that future Tesco layout
+     * Tries five selectors in priority order so that future Tesco layout
      * changes degrade gracefully rather than silently returning null.
+     *
+     * Strategy: PRIMARY targets the ingredients panel (complex products).
+     * Simple products (sunflower oil, eggs) return short text there (~5 chars)
+     * which fails the >10 char length filter, so F1 (product-description panel)
+     * catches them instead. F2/F3 are data-testid fallbacks for prefix renames.
+     * F4 is the pre-2026 h3+div pattern for saved test pages and rollbacks.
+     *
      * Returns null when no ingredient section is found (e.g. listing pages,
      * products without ingredient information).
      *
@@ -201,10 +213,11 @@
      */
     extractIngredients(doc) {
       const candidates = [
-        doc.querySelector(SELECTORS.INGREDIENT_TEXT),   // primary
-        doc.querySelector(SELECTORS.INGREDIENT_TEXT_F1), // fallback 1: partial id
-        doc.querySelector(SELECTORS.INGREDIENT_TEXT_F2), // fallback 2: data-testid
-        doc.querySelector(SELECTORS.INGREDIENT_TEXT_F3), // fallback 3: direct child
+        doc.querySelector(SELECTORS.INGREDIENT_TEXT),    // primary: ingredients panel
+        doc.querySelector(SELECTORS.INGREDIENT_TEXT_F1), // fallback 1: product-description
+        doc.querySelector(SELECTORS.INGREDIENT_TEXT_F2), // fallback 2: data-testid ingredients
+        doc.querySelector(SELECTORS.INGREDIENT_TEXT_F3), // fallback 3: data-testid product-desc
+        doc.querySelector(SELECTORS.INGREDIENT_TEXT_F4), // fallback 4: old h3+div (saved pages)
       ];
       // Accept the first element that has meaningful text (>10 chars avoids
       // accidentally matching an empty div or the heading element itself)
