@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "NOVA Extension",
-  "version": "0.9.0",
+  "version": "1.0.0",
   "description": "Identify ultra-processed foods on UK supermarket websites using NOVA classification",
   "author": "NOVA Extension Contributors",
   "icons": {
