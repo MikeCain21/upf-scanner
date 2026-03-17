@@ -102,6 +102,27 @@ function extractNovaMarkers(novaMarkersObj, novaScore) {
 }
 
 // ---------------------------------------------------------------------------
+// Ingredient text hashing
+// ---------------------------------------------------------------------------
+
+/**
+ * djb2 hash of a string — produces a stable, compact cache key for ingredient text.
+ * Using the hash instead of productId means cache misses are automatic when
+ * ingredient text changes (reformulation), with no extra API call required.
+ *
+ * @param {string} str
+ * @returns {string} Unsigned 32-bit integer as hex string
+ */
+function hashIngredients(str) {
+  let hash = 5381;
+  for (let i = 0; i < str.length; i++) {
+    hash = ((hash << 5) + hash) + str.charCodeAt(i);
+    hash = hash & hash; // Keep to 32-bit signed integer
+  }
+  return (hash >>> 0).toString(16); // Unsigned hex
+}
+
+// ---------------------------------------------------------------------------
 // Cache helpers (chrome.storage.local)
 // ---------------------------------------------------------------------------
 
@@ -191,18 +212,20 @@ async function fetchProductByBarcode(barcode) {
 
 /**
  * Sends ingredient text to the OpenFoodFacts v3 stateless analysis endpoint
- * and returns the NOVA group. Uses chrome.storage.local cache keyed by productId.
+ * and returns the NOVA group. Uses chrome.storage.local cache keyed by a
+ * djb2 hash of the ingredient text — so reformulated products automatically
+ * bust the cache without requiring a productId.
  *
  * @param {string} ingredientsText - Raw ingredient string scraped from the page
- * @param {string|null} productId  - Tesco product ID used as cache key
- * @returns {Promise<number|null>}  NOVA score 1–4, or null on failure
+ * @param {string|null} productId  - Unused; kept for backward-compatible call signature
+ * @returns {Promise<{novaScore: number|null, markers: string[]}|null>}
  */
-async function analyzeIngredients(ingredientsText, productId) {
-  // Cache check (skip if no productId)
-  if (productId) {
-    const cached = await getCached('ingredients_' + productId);
-    if (cached) return { novaScore: cached.novaScore, markers: cached.markers || [] };
-  }
+async function analyzeIngredients(ingredientsText, productId) { // eslint-disable-line no-unused-vars
+  // Cache keyed by ingredient text hash — reformulations get a fresh cache entry automatically
+  const ingredientHash = hashIngredients(ingredientsText);
+  const cacheKey = 'ingredients_' + ingredientHash;
+  const cached = await getCached(cacheKey);
+  if (cached) return { novaScore: cached.novaScore, markers: cached.markers || [] };
 
   const url = 'https://world.openfoodfacts.org/api/v3/product/test';
   const controller = new AbortController();
@@ -231,9 +254,9 @@ async function analyzeIngredients(ingredientsText, productId) {
     const novaScore = data.status === 'success' ? (data.product?.nova_group || null) : null;
     const markers = extractNovaMarkers(data.product?.nova_groups_markers, novaScore);
 
-    // Cache successful result
-    if (novaScore && productId) {
-      await setCached('ingredients_' + productId, { novaScore, markers, productName: '' });
+    // Cache successful result — keyed by ingredient hash (see cacheKey above)
+    if (novaScore) {
+      await setCached(cacheKey, { novaScore, markers, productName: '' });
     }
 
     console.log(`[NOVA API] Ingredient analysis → NOVA ${novaScore}, markers: ${markers.join(', ') || 'none'}`);
