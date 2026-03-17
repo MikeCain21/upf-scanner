@@ -144,6 +144,24 @@
 
     log(`Barcodes: ${barcodes.length > 0 ? barcodes.join(', ') : 'none'} | Ingredients: ${rawText ? 'found' : 'none'}`);
 
+    // Fast path: run local classifier synchronously before any network calls.
+    // NOVA 1 (≤3 ingredients, no processing signals) is unambiguous — fresh produce
+    // needs no OFF confirmation. All other scores proceed through the full pipeline.
+    if (rawText) {
+      const parseIngredients = window.__novaExt?.parseIngredients;
+      const classifyByIngredients = window.__novaExt?.classifyByIngredients;
+      if (typeof parseIngredients === 'function' && typeof classifyByIngredients === 'function') {
+        const ingredients = parseIngredients(rawText);
+        if (ingredients?.length > 0) {
+          const localResult = classifyByIngredients(ingredients);
+          if (localResult?.score === 1) {
+            log(`NOVA 1 from local classifier (fast path) — skipping OFF lookup`);
+            return createBadge(1, localResult.reason, localResult.indicators || []);
+          }
+        }
+      }
+    }
+
     // Fire all barcode lookups in parallel — ingredient analysis also fires simultaneously.
     // Promise.any resolves with the first result that carries a valid NOVA score.
     const barcodePromise = barcodes.length > 0
