@@ -18,6 +18,10 @@
 
 'use strict';
 
+// Load browser polyfill first — maps browser.* → chrome.* on Chrome/Edge;
+// no-op on Firefox where browser.* is native.
+importScripts('../lib/browser-polyfill.js');
+
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
@@ -110,13 +114,13 @@ function extractNovaMarkers(novaMarkersObj, novaScore) {
 async function getCached(barcode) {
   const key = CACHE_PREFIX + barcode;
   try {
-    const result = await chrome.storage.local.get(key);
+    const result = await browser.storage.local.get(key);
     if (!result[key]) return null;
 
     const cached = result[key];
     if (Date.now() - cached.timestamp > CACHE_TTL_MS) {
       // Entry expired — remove and treat as miss
-      await chrome.storage.local.remove(key);
+      await browser.storage.local.remove(key);
       return null;
     }
 
@@ -138,7 +142,7 @@ async function getCached(barcode) {
 async function setCached(barcode, entry) {
   const key = CACHE_PREFIX + barcode;
   try {
-    await chrome.storage.local.set({ [key]: { ...entry, timestamp: Date.now() } });
+    await browser.storage.local.set({ [key]: { ...entry, timestamp: Date.now() } });
     console.log(`[NOVA Cache] Stored ${barcode}`);
   } catch (err) {
     console.warn('[NOVA Cache] Write error:', err.message);
@@ -281,7 +285,7 @@ async function lookupProduct(barcode) {
 // Extension lifecycle
 // ---------------------------------------------------------------------------
 
-chrome.runtime.onInstalled.addListener((details) => {
+browser.runtime.onInstalled.addListener((details) => {
   console.log('[NOVA Background] Extension installed/updated:', details.reason);
   if (details.reason === 'install') {
     console.log('[NOVA Background] First-time installation');
@@ -292,7 +296,7 @@ chrome.runtime.onInstalled.addListener((details) => {
 // Message handler
 // ---------------------------------------------------------------------------
 
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
   console.log('[NOVA Background] Message received:', message.type, 'from', sender.tab?.url);
 
   if (message.type === 'FETCH_PRODUCT') {
@@ -331,14 +335,15 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 
   if (message.type === 'CLEAR_CACHE') {
-    chrome.storage.local.get(null, (allData) => {
+    // browser.storage.local.get/remove return Promises — use async IIFE
+    (async () => {
+      const allData = await browser.storage.local.get(null);
       const cacheKeys = Object.keys(allData).filter(k =>
         k.startsWith('product_') || k.startsWith('ingredients_') || k.startsWith(CACHE_PREFIX)
       );
-      chrome.storage.local.remove(cacheKeys, () => {
-        sendResponse({ cleared: cacheKeys.length });
-      });
-    });
+      await browser.storage.local.remove(cacheKeys);
+      sendResponse({ cleared: cacheKeys.length });
+    })();
     return true; // async
   }
 

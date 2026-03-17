@@ -125,7 +125,7 @@
       if (barcode) {
         log(`Barcode found: ${barcode}`);
         try {
-          const response = await chrome.runtime.sendMessage({
+          const response = await browser.runtime.sendMessage({
             type: 'FETCH_PRODUCT',
             barcode,
           });
@@ -148,7 +148,7 @@
       if (rawText) {
         log('Ingredient text found — sending to OFF analysis');
         try {
-          const response = await chrome.runtime.sendMessage({
+          const response = await browser.runtime.sendMessage({
             type: 'ANALYZE_INGREDIENTS',
             ingredientsText: rawText,
             productId,
@@ -310,7 +310,7 @@
    */
   function init() {
     // Load debug preference from storage (takes effect before first MutationObserver fire).
-    chrome.storage.local.get(['debugMode'], (data) => {
+    browser.storage.local.get(['debugMode']).then((data) => {
       CONFIG.DEBUG = !!data.debugMode;
     });
 

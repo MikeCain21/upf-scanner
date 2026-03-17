@@ -26,6 +26,7 @@
         "https://www.tesco.com/*"
       ],
       "js": [
+        "lib/browser-polyfill.js",
         "content/sites/tesco.js",
         "lib/ingredient-parser.js",
         "lib/nova-indicators.js",
