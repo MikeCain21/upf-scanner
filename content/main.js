@@ -112,86 +112,85 @@
 
   /**
    * Extracts, parses, and classifies the main product's ingredients.
-   * Tries OpenFoodFacts ingredient analysis first, falls back to local classifier.
+   * Fires barcode lookup and ingredient analysis simultaneously; barcode result
+   * takes priority. Falls back to local classifier if both APIs yield no score.
    * Returns a Promise that resolves to a scored badge element (or error badge).
    *
+   * Parallel strategy: worst case drops from ~18s (8s + 10s sequential) to ~10s
+   * (max of the two timeouts) on a cold cache.
+   *
    * @param {object} adapter
-   * @param {string|null} productId - Tesco product ID used as cache key
+   * @param {string|null} productId - Tesco product ID (passed through to background)
    * @returns {Promise<HTMLElement>} Badge element
    */
   async function classifyMainProduct(adapter, productId) {
     const { createBadge, setBadgeError } = window.__novaExt;
 
-  // Validates novaScore is an integer in [1, 4]
-  const isValidScore = n => Number.isInteger(n) && n >= 1 && n <= 4;
+    // Validates novaScore is an integer in [1, 4]
+    const isValidScore = n => Number.isInteger(n) && n >= 1 && n <= 4;
 
-  // Validates offUrl is a safe OpenFoodFacts product URL
-  const isValidOffUrl = url =>
-    typeof url === 'string' && url.startsWith('https://world.openfoodfacts.org/product/');
+    // Validates offUrl is a safe OpenFoodFacts product URL
+    const isValidOffUrl = url =>
+      typeof url === 'string' && url.startsWith('https://world.openfoodfacts.org/product/');
 
-    // 1. Barcode lookup (primary) — reads gtin13 from JSON-LD, queries OFF
-    if (typeof adapter.extractBarcode === 'function') {
-      const barcode = adapter.extractBarcode(document);
-      if (barcode) {
-        log(`Barcode found: ${barcode}`);
-        try {
-          const response = await browser.runtime.sendMessage({
-            type: 'FETCH_PRODUCT',
-            barcode,
-          });
-          if (response?.success && isValidScore(response.novaScore)) {
-            log(`NOVA ${response.novaScore} from barcode lookup (${response.source})`);
-            const offUrl = isValidOffUrl(response.offUrl)
-              ? response.offUrl
-              : `https://world.openfoodfacts.org/product/${barcode}`;
-            return createBadge(response.novaScore, `OpenFoodFacts (barcode ${barcode})`, response.markers || [], offUrl);
-          }
-          log(`Barcode lookup returned no NOVA score (${response?.source}) — trying ingredients`);
-        } catch (err) {
-          log('Barcode lookup failed — trying ingredients', err.message);
-        }
-      } else {
-        log('No barcode found in page — trying ingredients');
-      }
+    // Extract barcode and ingredients from DOM upfront (both synchronous)
+    const barcode = typeof adapter.extractBarcode === 'function'
+      ? adapter.extractBarcode(document) : null;
+    const rawText = typeof adapter.extractIngredients === 'function'
+      ? adapter.extractIngredients(document) : null;
+
+    log(`Barcode: ${barcode ?? 'none'} | Ingredients: ${rawText ? 'found' : 'none'}`);
+
+    // Fire both API calls simultaneously so the ingredient call is already in-flight
+    // while we wait for the higher-priority barcode result.
+    const barcodePromise = barcode
+      ? browser.runtime.sendMessage({ type: 'FETCH_PRODUCT', barcode }).catch(() => null)
+      : Promise.resolve(null);
+
+    const ingredientPromise = rawText
+      ? browser.runtime.sendMessage({
+          type: 'ANALYZE_INGREDIENTS',
+          ingredientsText: rawText,
+          productId,
+        }).catch(() => null)
+      : Promise.resolve(null);
+
+    // 1. Barcode result (priority — OpenFoodFacts product data is most authoritative)
+    const barcodeResult = await barcodePromise;
+    if (barcodeResult?.success && isValidScore(barcodeResult.novaScore)) {
+      log(`NOVA ${barcodeResult.novaScore} from barcode lookup (${barcodeResult.source})`);
+      const offUrl = isValidOffUrl(barcodeResult.offUrl)
+        ? barcodeResult.offUrl
+        : (barcode ? `https://world.openfoodfacts.org/product/${barcode}` : null);
+      return createBadge(barcodeResult.novaScore, `OpenFoodFacts (barcode ${barcode})`, barcodeResult.markers || [], offUrl);
     }
+    log(`Barcode lookup returned no NOVA score (${barcodeResult?.source}) — checking ingredient analysis`);
 
-    // 2. Ingredient text → OFF ingredient analysis (secondary)
-    if (typeof adapter.extractIngredients === 'function') {
-      const rawText = adapter.extractIngredients(document);
-      if (rawText) {
-        log('Ingredient text found — sending to OFF analysis');
-        try {
-          const response = await browser.runtime.sendMessage({
-            type: 'ANALYZE_INGREDIENTS',
-            ingredientsText: rawText,
-            productId,
-          });
-          if (response?.success && isValidScore(response.novaScore)) {
-            log(`NOVA ${response.novaScore} from OFF ingredient analysis`);
-            return createBadge(response.novaScore, 'OpenFoodFacts ingredient analysis', response.markers || []);
-          }
-          log('OFF ingredient analysis returned no score — trying local classifier');
-        } catch (err) {
-          log('OFF ingredient analysis failed — trying local classifier', err.message);
-        }
+    // 2. Ingredient analysis result (already in-flight, may already be resolved)
+    const ingredientResult = await ingredientPromise;
+    if (ingredientResult?.success && isValidScore(ingredientResult.novaScore)) {
+      log(`NOVA ${ingredientResult.novaScore} from OFF ingredient analysis`);
+      return createBadge(ingredientResult.novaScore, 'OpenFoodFacts ingredient analysis', ingredientResult.markers || []);
+    }
+    log('OFF ingredient analysis returned no score — trying local classifier');
 
-        // 3. Local rule-based classifier (tertiary)
-        const parseIngredients = window.__novaExt?.parseIngredients;
-        const classifyByIngredients = window.__novaExt?.classifyByIngredients;
-        if (typeof parseIngredients === 'function' && typeof classifyByIngredients === 'function') {
-          const ingredients = parseIngredients(rawText);
-          if (ingredients && ingredients.length > 0) {
-            const result = classifyByIngredients(ingredients);
-            if (result) {
-              log(`NOVA ${result.score} from local classifier (confidence: ${result.confidence})`);
-              return createBadge(result.score, result.reason, result.indicators || []);
-            }
+    // 3. Local rule-based classifier (unchanged fallback)
+    if (rawText) {
+      const parseIngredients = window.__novaExt?.parseIngredients;
+      const classifyByIngredients = window.__novaExt?.classifyByIngredients;
+      if (typeof parseIngredients === 'function' && typeof classifyByIngredients === 'function') {
+        const ingredients = parseIngredients(rawText);
+        if (ingredients?.length > 0) {
+          const result = classifyByIngredients(ingredients);
+          if (result) {
+            log(`NOVA ${result.score} from local classifier (confidence: ${result.confidence})`);
+            return createBadge(result.score, result.reason, result.indicators || []);
           }
         }
       }
     }
 
-    // 4. All sources exhausted — show "?" badge
+    // All sources exhausted — show "?" badge
     log('No classification data available — showing unknown badge');
     const badge = document.createElement('span');
     setBadgeError(badge, 'Ingredient data not available for this product');
@@ -291,12 +290,13 @@
     );
 
     // Debounce re-run to let Tesco's React finish rendering after navigation.
+    // 150ms is sufficient for React to batch and commit a render.
     window.addEventListener(
       'nova:urlchange',
       debounce(() => {
         log('SPA navigation detected — re-running detection');
         detectAndBadge(adapter);
-      }, 400)
+      }, 150)
     );
   }
 
@@ -314,7 +314,7 @@
    */
   function setupMutationObserver(adapter) {
     const observer = new MutationObserver(
-      debounce(() => detectAndBadge(adapter), 500)
+      debounce(() => detectAndBadge(adapter), 150)
     );
     observer.observe(document.body, { childList: true, subtree: true });
     log('MutationObserver active');
