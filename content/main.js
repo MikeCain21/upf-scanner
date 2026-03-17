@@ -135,7 +135,8 @@
           });
           if (response?.success && response.novaScore) {
             log(`NOVA ${response.novaScore} from barcode lookup (${response.source})`);
-            return createBadge(response.novaScore, `OpenFoodFacts (barcode ${barcode})`, []);
+            const offUrl = `https://world.openfoodfacts.org/product/${barcode}`;
+            return createBadge(response.novaScore, `OpenFoodFacts (barcode ${barcode})`, response.markers || [], offUrl);
           }
           log(`Barcode lookup returned no NOVA score (${response?.source}) — trying ingredients`);
         } catch (err) {
@@ -228,9 +229,16 @@
       if (isMainProduct(el)) {
         // Claim early — prevents re-entry during async resolution.
         _badged.add(el);
-        // Classify by ingredients — ingredient section is available on PDPs.
+        // Show "NOVA ?" immediately so the user has feedback while async
+        // classification runs; replace with the scored badge on resolve.
+        const { setBadgeLoading } = window.__novaExt;
+        const loadingBadge = document.createElement('span');
+        setBadgeLoading(loadingBadge);
+        injectBadge(el, loadingBadge);
+        log(`Loading badge injected for: ${info.name}`);
         classifyMainProduct(adapter, info.productId).then(badge => {
-          injectBadge(el, badge);
+          log(`Classification resolved — replacing loading badge (result: "${badge.textContent}")`);
+          loadingBadge.replaceWith(badge);
         });
       } else {
         // Tile product: no ingredient data and no EAN barcode available.
@@ -315,7 +323,8 @@
   function init() {
     // Load debug preference from storage (takes effect before first MutationObserver fire).
     browser.storage.local.get(['debugMode']).then((data) => {
-      CONFIG.DEBUG = !!data.debugMode;
+      // Only override compiled default when debugMode is explicitly set in storage
+      if (data.debugMode !== undefined) CONFIG.DEBUG = !!data.debugMode;
     });
 
     log(`Extension loaded — Version ${CONFIG.VERSION}, Phase ${CONFIG.PHASE}`);

@@ -255,7 +255,7 @@ async function lookupProduct(barcode) {
   // 1. Cache hit
   const cached = await getCached(barcode);
   if (cached) {
-    return { source: 'cache', novaScore: cached.novaScore, productName: cached.productName };
+    return { source: 'cache', novaScore: cached.novaScore, productName: cached.productName, markers: cached.markers || [] };
   }
 
   // 2. API lookup
@@ -275,10 +275,11 @@ async function lookupProduct(barcode) {
 
   // 3. Cache successful result and return
   const productName = product.product_name || '';
-  await setCached(barcode, { novaScore, productName });
+  const markers = extractNovaMarkers(product.nova_groups_markers, novaScore);
+  await setCached(barcode, { novaScore, productName, markers });
 
   console.log(`[NOVA API] NOVA ${novaScore} (${productName}) from OpenFoodFacts for ${barcode}`);
-  return { source: 'api', novaScore, productName };
+  return { source: 'api', novaScore, productName, markers };
 }
 
 // ---------------------------------------------------------------------------
