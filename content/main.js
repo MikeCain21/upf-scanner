@@ -5,7 +5,10 @@
  * and badge display on supported supermarket pages.
  *
  * Load order (manifest.json):
- *   content/sites/tesco.js        → window.__novaExt.adapters
+ *   lib/browser-polyfill.js       → browser.* API
+ *   content/sites/base-adapter.js → window.__novaExt.BaseAdapter
+ *   content/sites/registry.js     → window.__novaExt.registry
+ *   content/sites/{site}.js       → self-registers via registry.register()
  *   lib/ingredient-parser.js      → window.__novaExt.parseIngredients
  *   lib/nova-indicators.js        → window.__novaExt.detectIndicators
  *   lib/nova-classifier.js        → window.__novaExt.classifyByIngredients
@@ -78,12 +81,13 @@
   // ---------------------------------------------------------------------------
 
   /**
-   * Finds the first registered adapter that supports the current page.
+   * Finds the registered adapter for the current page URL via the registry.
    * @returns {object|null}
    */
   function findAdapter() {
-    const adapters = window.__novaExt?.adapters || [];
-    return adapters.find((adapter) => adapter.isSupported()) || null;
+    const registry = window.__novaExt?.registry;
+    if (!registry) return null;
+    return registry.getAdapter(window.location.href);
   }
 
   // ---------------------------------------------------------------------------
@@ -131,24 +135,16 @@
       if (barcode) {
         log(`Barcode found: ${barcode}`);
         try {
-          const response = await chrome.runtime.sendMessage({
+          const response = await browser.runtime.sendMessage({
             type: 'FETCH_PRODUCT',
             barcode,
           });
           if (response?.success && isValidScore(response.novaScore)) {
             log(`NOVA ${response.novaScore} from barcode lookup (${response.source})`);
-            const badge = createBadge(
-              response.novaScore,
-              `OpenFoodFacts (barcode ${barcode})`,
-              response.markers || []
-            );
-            if (isValidOffUrl(response.offUrl)) {
-              badge.style.cursor = 'pointer';
-              badge.addEventListener('click', () =>
-                window.open(response.offUrl, '_blank', 'noopener,noreferrer')
-              );
-            }
-            return badge;
+            const offUrl = isValidOffUrl(response.offUrl)
+              ? response.offUrl
+              : `https://world.openfoodfacts.org/product/${barcode}`;
+            return createBadge(response.novaScore, `OpenFoodFacts (barcode ${barcode})`, response.markers || [], offUrl);
           }
           log(`Barcode lookup returned no NOVA score (${response?.source}) — trying ingredients`);
         } catch (err) {
@@ -165,7 +161,7 @@
       if (rawText) {
         log('Ingredient text found — sending to OFF analysis');
         try {
-          const response = await chrome.runtime.sendMessage({
+          const response = await browser.runtime.sendMessage({
             type: 'ANALYZE_INGREDIENTS',
             ingredientsText: rawText,
             productId,
@@ -340,7 +336,7 @@
 
     // Load debug preference from storage before first detection run so that
     // CONFIG.DEBUG is guaranteed set when detectAndBadge() is first called.
-    chrome.storage.local.get(['debugMode'], (data) => {
+    browser.storage.local.get(['debugMode']).then((data) => {
       // Only override the compiled default when debugMode is explicitly set in storage
       if (data.debugMode !== undefined) CONFIG.DEBUG = !!data.debugMode;
 

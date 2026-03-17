@@ -15,6 +15,11 @@
   ],
   "host_permissions": [
     "https://www.tesco.com/*",
+    "https://www.sainsburys.co.uk/*",
+    "https://www.asda.com/*",
+    "https://groceries.morrisons.com/*",
+    "https://www.waitrose.com/*",
+    "https://www.ocado.com/*",
     "https://world.openfoodfacts.org/*"
   ],
   "background": {
@@ -26,6 +31,9 @@
         "https://www.tesco.com/*"
       ],
       "js": [
+        "lib/browser-polyfill.js",
+        "content/sites/base-adapter.js",
+        "content/sites/registry.js",
         "content/sites/tesco.js",
         "lib/ingredient-parser.js",
         "lib/nova-indicators.js",

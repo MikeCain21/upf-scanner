@@ -156,12 +156,17 @@
   /**
    * Creates a scored NOVA badge element (NOVA 1–4).
    *
+   * When offUrl is provided the badge is wrapped in an <a> that opens the
+   * OpenFoodFacts product page in a new tab. When absent (ingredient-only
+   * classification with no barcode) the badge renders as a plain span.
+   *
    * @param {number} novaScore - NOVA group 1–4
    * @param {string} reason - Human-readable classification reason
    * @param {string[]} [indicators] - NOVA 4 indicators found (may be empty)
-   * @returns {HTMLElement} Badge span element
+   * @param {string} [offUrl] - Optional OpenFoodFacts product URL
+   * @returns {HTMLElement} Badge element (span, or span wrapped in <a>)
    */
-  function createBadge(novaScore, reason, indicators) {
+  function createBadge(novaScore, reason, indicators, offUrl) {
     const badge = document.createElement('span');
     const scoreClass = NOVA_BADGE_CLASS[novaScore] || 'nova-badge-error';
     badge.className = `nova-badge ${scoreClass}`;
@@ -170,6 +175,16 @@
 
     const tooltipText = _buildTooltipText(novaScore, reason, indicators);
     _attachTooltip(badge, tooltipText);
+
+    if (offUrl) {
+      const link = document.createElement('a');
+      link.href = offUrl;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      link.style.textDecoration = 'none';
+      link.appendChild(badge);
+      return link;
+    }
 
     return badge;
   }
