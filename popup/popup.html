@@ -13,69 +13,110 @@
     }
 
     body {
-      width: 320px;
-      padding: 20px;
+      width: 300px;
+      padding: 16px;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
       font-size: 14px;
       color: #333;
     }
 
     h1 {
-      font-size: 18px;
-      margin-bottom: 15px;
+      font-size: 16px;
+      font-weight: 600;
       color: #dc3545;
+      margin-bottom: 14px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #e0e0e0;
     }
 
-    .version {
+    /* Product score section */
+    #product-section {
+      display: none;
+      margin-bottom: 14px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid #e0e0e0;
+    }
+
+    .product-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .nova-box {
+      flex-shrink: 0;
+      width: 44px;
+      height: 44px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .nova-1 { background-color: #4CAF50; }
+    .nova-2 { background-color: #FFC107; }
+    .nova-3 { background-color: #FF9800; }
+    .nova-4 { background-color: #E53935; }
+
+    .product-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .product-name {
+      font-size: 13px;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .nova-label {
+      font-size: 12px;
+      color: #555;
+      margin-top: 2px;
+    }
+
+    .nova-description {
       font-size: 12px;
       color: #666;
-      margin-bottom: 20px;
+      margin-top: 8px;
+      line-height: 1.5;
     }
 
-    .status {
-      background-color: #f8f9fa;
-      padding: 15px;
-      border-radius: 6px;
-      margin-bottom: 15px;
+    .nova-indicators {
+      font-size: 12px;
+      color: #c0392b;
+      margin-top: 8px;
+      line-height: 1.5;
+      font-style: italic;
     }
 
-    .status-item {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 10px;
+    .off-link {
+      display: inline-block;
+      margin-top: 8px;
+      font-size: 12px;
+      color: #007bff;
+      text-decoration: none;
     }
 
-    .status-item:last-child {
-      margin-bottom: 0;
+    .off-link:hover {
+      text-decoration: underline;
     }
 
-    .status-label {
-      color: #666;
-    }
-
-    .status-value {
-      font-weight: bold;
-      color: #333;
-    }
-
-    .message {
-      text-align: center;
-      padding: 12px 0;
-      color: #666;
-      font-size: 13px;
-      line-height: 1.6;
-    }
-
+    /* Buttons */
     .button {
       width: 100%;
-      padding: 10px;
-      margin-top: 10px;
+      padding: 9px;
       background-color: #007bff;
       color: white;
       border: none;
       border-radius: 6px;
-      font-size: 14px;
-      font-weight: bold;
+      font-size: 13px;
+      font-weight: 600;
       cursor: pointer;
       transition: background-color 0.2s;
     }
@@ -89,18 +130,31 @@
       cursor: not-allowed;
     }
 
+    /* Advanced section */
+    details {
+      margin-top: 10px;
+    }
+
+    summary {
+      font-size: 12px;
+      color: #555;
+      cursor: pointer;
+      user-select: none;
+    }
+
     .toggle-row {
-      margin-top: 12px;
+      margin-top: 8px;
       display: flex;
       align-items: center;
       gap: 8px;
-      font-size: 13px;
+      font-size: 12px;
       color: #555;
     }
 
+    /* Footer links */
     .links {
-      margin-top: 20px;
-      padding-top: 15px;
+      margin-top: 14px;
+      padding-top: 12px;
       border-top: 1px solid #e0e0e0;
       font-size: 12px;
     }
@@ -109,42 +163,62 @@
       color: #007bff;
       text-decoration: none;
       display: block;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
+    }
+
+    .links a:last-child {
+      margin-bottom: 0;
     }
 
     .links a:hover {
       text-decoration: underline;
     }
+
+    .sr-only { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; }
   </style>
 </head>
 <body>
-  <h1>🔴 NOVA Extension</h1>
-  <div class="version">Version 0.9.0 — Phase 10</div>
+  <header><h1>NOVA Extension</h1></header>
+  <main>
+    <section id="product-section" aria-label="Product NOVA score" aria-live="polite" aria-atomic="true">
+      <div class="product-row">
+        <div id="nova-box" class="nova-box" role="img" aria-label="NOVA score"></div>
+        <div class="product-info">
+          <div id="product-name" class="product-name"></div>
+          <div id="nova-label" class="nova-label"></div>
+        </div>
+      </div>
+      <div id="nova-description" class="nova-description"></div>
+      <div id="nova-indicators" class="nova-indicators" style="display:none"></div>
+      <a id="off-link" class="off-link" href="#" target="_blank" rel="noopener noreferrer" style="display:none">View on Open Food Facts &rarr;</a>
+    </section>
 
-  <div class="status">
-    <div class="status-item">
-      <span class="status-label">Status:</span>
-      <span class="status-value" id="status">Active</span>
+    <button class="button" id="clearCache" aria-describedby="cache-status">Clear Cache</button>
+    <div id="cache-status" role="status" aria-live="polite" aria-atomic="true" class="sr-only"></div>
+
+    <details>
+      <summary>Advanced</summary>
+      <label class="toggle-row">
+        <input type="checkbox" id="debugMode">
+        Debug mode
+      </label>
+    </details>
+  </main>
+
+  <nav aria-label="Resources">
+    <div class="links">
+      <a href="https://world.openfoodfacts.org/nova" target="_blank"
+         rel="noopener noreferrer"
+         aria-label="NOVA Classification Guide (opens in new tab)">
+        📖 NOVA Classification Guide
+      </a>
+      <a href="https://github.com/MikeCain21/nova-extension/issues" target="_blank"
+         rel="noopener noreferrer"
+         aria-label="Report Issue on GitHub (opens in new tab)">
+        🐛 Report Issue (GitHub)
+      </a>
     </div>
-  </div>
-
-  <div class="message">
-    Active on Tesco.com — hover badges for details.
-  </div>
-
-  <button class="button" id="clearCache">
-    Clear Cache
-  </button>
-
-  <label class="toggle-row">
-    <input type="checkbox" id="debugMode">
-    Debug mode (verbose console logging)
-  </label>
-
-  <div class="links">
-    <a href="https://world.openfoodfacts.org/nova" target="_blank">📚 NOVA Classification Guide</a>
-    <a href="https://github.com/MikeCain21/nova-extension/issues" target="_blank" rel="noopener noreferrer">🐛 Report Issue (GitHub)</a>
-  </div>
+  </nav>
 
   <script src="popup.js"></script>
 </body>

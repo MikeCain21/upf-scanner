@@ -23,6 +23,22 @@
   transform: scale(1.05);
 }
 
+.nova-badge:focus-visible {
+  outline: 3px solid #005fcc;
+  outline-offset: 2px;
+  transform: scale(1.05);
+}
+
+/* Scoped to NOVA links only — avoids leaking onto host page */
+a.nova-badge-link:focus {
+  outline: none;
+}
+a.nova-badge-link:focus-visible .nova-badge {
+  outline: 3px solid #005fcc;
+  outline-offset: 2px;
+  transform: scale(1.05);
+}
+
 /* NOVA 1 - Unprocessed (Green) */
 .nova-badge-1 {
   background-color: #28a745;

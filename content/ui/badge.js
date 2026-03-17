@@ -61,6 +61,8 @@
     if (!_tooltipEl) {
       _tooltipEl = document.createElement('div');
       _tooltipEl.className = 'nova-tooltip';
+      _tooltipEl.id = 'nova-tooltip';
+      _tooltipEl.setAttribute('role', 'tooltip');
       _tooltipEl.style.display = 'none';
       // Keep tooltip alive on mouseenter so the flag button can be clicked.
       _tooltipEl.addEventListener('mouseenter', () => clearTimeout(_hideTimer));
@@ -131,6 +133,18 @@
   function _attachTooltip(badgeEl, tooltipText) {
     // Pre-create the tooltip element so it exists on document.body from first badge creation
     getTooltip();
+    badgeEl.setAttribute('aria-describedby', 'nova-tooltip');
+
+    badgeEl.addEventListener('focus', () => {
+      const tooltip = getTooltip();
+      tooltip.textContent = tooltipText;
+      clearTimeout(_hideTimer);
+      _showTooltip(tooltip, badgeEl);
+    });
+    badgeEl.addEventListener('blur', () => {
+      _scheduleHideTooltip(getTooltip());
+    });
+
     badgeEl.addEventListener('mouseenter', () => {
       const tooltip = getTooltip();
 
@@ -182,10 +196,17 @@
       link.target = '_blank';
       link.rel = 'noopener noreferrer';
       link.style.textDecoration = 'none';
+      link.className = 'nova-badge-link';
+      link.setAttribute('aria-label',
+        `NOVA ${novaScore}: ${NOVA_LABELS[novaScore] || 'unknown'} — View on Open Food Facts (opens in new tab)`
+      );
       link.appendChild(badge);
       return link;
     }
 
+    // No OFF URL — make the badge itself keyboard-focusable so tooltip is reachable
+    badge.setAttribute('tabindex', '0');
+    badge.setAttribute('role', 'img');
     return badge;
   }
 
