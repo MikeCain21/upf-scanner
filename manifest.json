@@ -15,6 +15,11 @@
   ],
   "host_permissions": [
     "https://www.tesco.com/*",
+    "https://www.sainsburys.co.uk/*",
+    "https://www.asda.com/*",
+    "https://groceries.morrisons.com/*",
+    "https://www.waitrose.com/*",
+    "https://www.ocado.com/*",
     "https://world.openfoodfacts.org/*"
   ],
   "background": {
