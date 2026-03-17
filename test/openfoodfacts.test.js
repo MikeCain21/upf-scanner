@@ -71,6 +71,10 @@ describe('extractNovaScore', () => {
   it('returns null for empty nova_groups_tags array', () => {
     expect(extractNovaScore({ nova_groups_tags: [] })).toBeNull();
   });
+
+  it('returns null for non-numeric nova_group string (invalid value)', () => {
+    expect(extractNovaScore({ nova_group: 'invalid' })).toBeNull();
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -104,6 +108,10 @@ describe('parseApiResponse', () => {
 
   it('returns null when product is null', () => {
     expect(parseApiResponse({ status: 1, product: null })).toBeNull();
+  });
+
+  it('returns empty object when status is 1 and product is an empty object', () => {
+    expect(parseApiResponse({ status: 1, product: {} })).toEqual({});
   });
 });
 

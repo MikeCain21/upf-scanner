@@ -11,7 +11,7 @@
  *           | { success: false, error: string }
  *
  * Content scripts fall back to local classification when source is
- * 'not_found' or 'no_nova' (handled in Phase 7–8 wiring).
+ * 'not_found' or 'no_nova'.
  *
  * @version 0.6.0
  */
@@ -25,7 +25,7 @@
 const API_BASE_URL = 'https://world.openfoodfacts.org/api/v2/product';
 
 // User-Agent is required by OpenFoodFacts Terms of Service.
-const USER_AGENT = 'NOVA-Extension/1.0 (open-source food classification tool)';
+const USER_AGENT = 'NOVA-Extension/1.0.0 (open-source food classification tool)';
 
 // Cache key prefix (short to save storage space).
 const CACHE_PREFIX = 'off_';
@@ -157,11 +157,15 @@ async function setCached(barcode, entry) {
  * @returns {Promise<Object|null>}
  */
 async function fetchProductByBarcode(barcode) {
-  const url = `${API_BASE_URL}/${barcode}.json`;
+  const url = `${API_BASE_URL}/${encodeURIComponent(barcode)}.json`;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8000);
   try {
     const response = await fetch(url, {
       headers: { 'User-Agent': USER_AGENT },
+      signal: controller.signal,
     });
+    clearTimeout(timeout);
 
     if (!response.ok) {
       // 404 is expected for unknown barcodes — not an error
@@ -197,6 +201,8 @@ async function analyzeIngredients(ingredientsText, productId) {
   }
 
   const url = 'https://world.openfoodfacts.org/api/v3/product/test';
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10000);
   try {
     const response = await fetch(url, {
       method: 'PATCH',
@@ -204,6 +210,7 @@ async function analyzeIngredients(ingredientsText, productId) {
         'Content-Type': 'application/json',
         'User-Agent': USER_AGENT,
       },
+      signal: controller.signal,
       body: JSON.stringify({
         lc: 'en',
         cc: 'gb',
@@ -215,6 +222,7 @@ async function analyzeIngredients(ingredientsText, productId) {
       }),
     });
 
+    clearTimeout(timeout);
     const data = await response.json();
     const novaScore = data.status === 'success' ? (data.product?.nova_group || null) : null;
     const markers = extractNovaMarkers(data.product?.nova_groups_markers, novaScore);
@@ -240,7 +248,7 @@ async function analyzeIngredients(ingredientsText, productId) {
  * Looks up a product by barcode: checks cache first, then queries API.
  *
  * Returns one of:
- *   { source: 'cache'|'api', novaScore: number, productName: string }
+ *   { source: 'cache'|'api', novaScore: number, productName: string, markers: string[], offUrl: string|null }
  *   { source: 'not_found' }   — barcode not in OpenFoodFacts
  *   { source: 'no_nova' }     — product found but NOVA score unavailable
  *
@@ -251,7 +259,13 @@ async function lookupProduct(barcode) {
   // 1. Cache hit
   const cached = await getCached(barcode);
   if (cached) {
-    return { source: 'cache', novaScore: cached.novaScore, productName: cached.productName };
+    return {
+      source: 'cache',
+      novaScore: cached.novaScore,
+      productName: cached.productName,
+      markers: cached.markers || [],
+      offUrl: cached.offUrl || null,
+    };
   }
 
   // 2. API lookup
@@ -271,22 +285,13 @@ async function lookupProduct(barcode) {
 
   // 3. Cache successful result and return
   const productName = product.product_name || '';
-  await setCached(barcode, { novaScore, productName });
+  const markers = extractNovaMarkers(product.nova_groups_markers, novaScore);
+  const offUrl = `https://world.openfoodfacts.org/product/${barcode}`;
+  await setCached(barcode, { novaScore, productName, markers, offUrl });
 
   console.log(`[NOVA API] NOVA ${novaScore} (${productName}) from OpenFoodFacts for ${barcode}`);
-  return { source: 'api', novaScore, productName };
+  return { source: 'api', novaScore, productName, markers, offUrl };
 }
-
-// ---------------------------------------------------------------------------
-// Extension lifecycle
-// ---------------------------------------------------------------------------
-
-chrome.runtime.onInstalled.addListener((details) => {
-  console.log('[NOVA Background] Extension installed/updated:', details.reason);
-  if (details.reason === 'install') {
-    console.log('[NOVA Background] First-time installation');
-  }
-});
 
 // ---------------------------------------------------------------------------
 // Message handler
@@ -294,6 +299,14 @@ chrome.runtime.onInstalled.addListener((details) => {
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   console.log('[NOVA Background] Message received:', message.type, 'from', sender.tab?.url);
+
+  // Validate sender: must be a tab from a known content script origin
+  const senderOrigin = sender.origin || new URL(sender.tab?.url || 'about:blank').origin;
+  if (!sender.tab || !senderOrigin.includes('tesco.com')) {
+    console.warn('[NOVA Background] Rejected message from unexpected sender:', senderOrigin);
+    sendResponse({ success: false, error: 'Unauthorized sender' });
+    return false;
+  }
 
   if (message.type === 'FETCH_PRODUCT') {
     const { barcode } = message;
@@ -346,4 +359,4 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   return false;
 });
 
-console.log('[NOVA Background] Service worker ready (Phase 10)');
+console.log('[NOVA Background] Service worker ready');

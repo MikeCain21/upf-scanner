@@ -270,10 +270,10 @@ describe('Meat-substitute / plant-based indicators', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Verification tests (Phase 4 checklist)
+// detectIndicators — verification suite
 // ---------------------------------------------------------------------------
 
-describe('Phase 4 verification checklist', () => {
+describe('detectIndicators — E-number boundaries, modified starch, and safe ingredients', () => {
   it('multiple ultra-processed ingredients → count ≥ 3', () => {
     const { count } = detectIndicators(['Water', 'Modified Maize Starch', 'E621', 'Maltodextrin']);
     expect(count).toBeGreaterThanOrEqual(3);

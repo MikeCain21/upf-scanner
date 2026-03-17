@@ -12,14 +12,13 @@
  *   content/ui/badge.js           → window.__novaExt.createBadge / setBadgeLoading / setBadgeError / injectBadge
  *   content/main.js               (this file)
  *
- * Phase 8: SPA navigation support + API wiring.
+ * SPA navigation support + API wiring.
  *   - Wraps history.pushState/replaceState to detect SPA URL changes
  *   - MutationObserver catches products rendered after DOM settles
  *   - WeakSet prevents duplicate badges across re-runs
- *   - Tile products are skipped (Tesco IDs ≠ EAN barcodes; resolved in Phase 9)
+ *   - Tile products are skipped (Tesco IDs ≠ EAN barcodes)
  *
  * @version 0.9.0
- * @phase 10 - Production polish, stats tracking, debug-from-storage
  */
 
 (function () {
@@ -119,6 +118,13 @@
   async function classifyMainProduct(adapter, productId) {
     const { createBadge, setBadgeError } = window.__novaExt;
 
+  // Validates novaScore is an integer in [1, 4]
+  const isValidScore = n => Number.isInteger(n) && n >= 1 && n <= 4;
+
+  // Validates offUrl is a safe OpenFoodFacts product URL
+  const isValidOffUrl = url =>
+    typeof url === 'string' && url.startsWith('https://world.openfoodfacts.org/product/');
+
     // 1. Barcode lookup (primary) — reads gtin13 from JSON-LD, queries OFF
     if (typeof adapter.extractBarcode === 'function') {
       const barcode = adapter.extractBarcode(document);
@@ -129,9 +135,20 @@
             type: 'FETCH_PRODUCT',
             barcode,
           });
-          if (response?.success && response.novaScore) {
+          if (response?.success && isValidScore(response.novaScore)) {
             log(`NOVA ${response.novaScore} from barcode lookup (${response.source})`);
-            return createBadge(response.novaScore, `OpenFoodFacts (barcode ${barcode})`, []);
+            const badge = createBadge(
+              response.novaScore,
+              `OpenFoodFacts (barcode ${barcode})`,
+              response.markers || []
+            );
+            if (isValidOffUrl(response.offUrl)) {
+              badge.style.cursor = 'pointer';
+              badge.addEventListener('click', () =>
+                window.open(response.offUrl, '_blank', 'noopener,noreferrer')
+              );
+            }
+            return badge;
           }
           log(`Barcode lookup returned no NOVA score (${response?.source}) — trying ingredients`);
         } catch (err) {
@@ -153,7 +170,7 @@
             ingredientsText: rawText,
             productId,
           });
-          if (response?.success && response.novaScore) {
+          if (response?.success && isValidScore(response.novaScore)) {
             log(`NOVA ${response.novaScore} from OFF ingredient analysis`);
             return createBadge(response.novaScore, 'OpenFoodFacts ingredient analysis', response.markers || []);
           }
@@ -194,7 +211,7 @@
    *
    * Main PDP product (H1): classified by ingredients and badged immediately.
    * Tile products: skipped — Tesco tile IDs are not EAN barcodes so the OFF API
-   * cannot resolve them. Phase 9 will add barcode resolution for tiles.
+   * cannot resolve them.
    *
    * Uses _badged WeakSet to skip elements that already have a badge, making it
    * safe to call on every SPA navigation and MutationObserver fire.
@@ -224,12 +241,19 @@
       if (isMainProduct(el)) {
         // Claim early — prevents re-entry during async resolution.
         _badged.add(el);
-        // Classify by ingredients — ingredient section is available on PDPs.
+        // Show "NOVA ?" immediately so the user has feedback while async
+        // classification runs; replace with the scored badge on resolve.
+        const { setBadgeLoading } = window.__novaExt;
+        const loadingBadge = document.createElement('span');
+        setBadgeLoading(loadingBadge);
+        injectBadge(el, loadingBadge);
+        log(`Loading badge injected for: ${info.name}`);
         classifyMainProduct(adapter, info.productId).then(badge => {
-          injectBadge(el, badge);
+          log(`Classification resolved — replacing loading badge (result: "${badge.textContent}")`);
+          loadingBadge.replaceWith(badge);
         });
       } else {
-        // Tile product: no ingredient data and no EAN barcode available.
+        // Tile products: no ingredient data and no EAN barcode available.
         // Skip entirely — a missing badge is better than a permanent spinner.
         tilesSkipped++;
       }
@@ -309,32 +333,32 @@
    * Loads debug preference from storage before first MutationObserver fire.
    */
   function init() {
-    // Load debug preference from storage (takes effect before first MutationObserver fire).
-    chrome.storage.local.get(['debugMode'], (data) => {
-      CONFIG.DEBUG = !!data.debugMode;
-    });
-
-    log(`Extension loaded — Version ${CONFIG.VERSION}, Phase ${CONFIG.PHASE}`);
-
     const adapter = findAdapter();
     if (!adapter) {
-      log('No supported adapter for this page — extension will not run');
       return;
     }
 
-    log(`Using adapter: ${adapter.SITE_ID}`);
+    // Load debug preference from storage before first detection run so that
+    // CONFIG.DEBUG is guaranteed set when detectAndBadge() is first called.
+    chrome.storage.local.get(['debugMode'], (data) => {
+      // Only override the compiled default when debugMode is explicitly set in storage
+      if (data.debugMode !== undefined) CONFIG.DEBUG = !!data.debugMode;
 
-    const run = () => {
-      detectAndBadge(adapter);
-      setupSpaNavigation(adapter);
-      setupMutationObserver(adapter);
-    };
+      log(`Extension loaded — Version ${CONFIG.VERSION}`);
+      log(`Using adapter: ${adapter.SITE_ID}`);
 
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', run);
-    } else {
-      run();
-    }
+      const run = () => {
+        detectAndBadge(adapter);
+        setupSpaNavigation(adapter);
+        setupMutationObserver(adapter);
+      };
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', run);
+      } else {
+        run();
+      }
+    });
   }
 
   init();

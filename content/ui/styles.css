@@ -5,21 +5,7 @@
  * @version 0.1.0
  */
 
-/* Test badge (Phase 1 only) */
-.nova-test-badge {
-  display: inline-block;
-  padding: 2px 8px;
-  margin-left: 8px;
-  background-color: #007bff;
-  color: white;
-  border-radius: 4px;
-  font-size: 12px;
-  font-weight: bold;
-  font-family: Arial, sans-serif;
-  vertical-align: middle;
-}
-
-/* NOVA badges (will be implemented in Phase 7) */
+/* NOVA badges */
 .nova-badge {
   display: inline-block;
   padding: 4px 10px;

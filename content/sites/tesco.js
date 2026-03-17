@@ -64,6 +64,9 @@
     INGREDIENT_TEXT_F4: '#accordion-panel-ingredients-panel h3 + div',
   };
 
+  /** Minimum ingredient text length to be considered meaningful content */
+  const MIN_INGREDIENT_TEXT_LENGTH = 10;
+
   /** Pattern to extract a numeric product ID from a Tesco product URL */
   const PRODUCT_URL_PATTERN = /\/groceries\/en-GB\/products\/(\d+)/;
 
@@ -222,7 +225,7 @@
       // Accept the first element that has meaningful text (>10 chars avoids
       // accidentally matching an empty div or the heading element itself)
       const el = candidates.find(
-        (candidate) => candidate && candidate.textContent.trim().length > 10
+        (candidate) => candidate && candidate.textContent.trim().length > MIN_INGREDIENT_TEXT_LENGTH
       );
       if (!el) return null;
       // textContent automatically strips <strong> allergen markers — no extra
@@ -246,7 +249,8 @@
         if (!Array.isArray(graph)) return null;
         const product = graph.find(g => g['@type'] === 'Product');
         return product?.gtin13 || null;
-      } catch {
+      } catch (err) {
+        console.warn('[NOVA Tesco] extractBarcode error:', err.message);
         return null;
       }
     },

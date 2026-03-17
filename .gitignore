@@ -30,9 +30,8 @@ Desktop.ini
 *.crx
 *.zip
 
-# Saved-page asset directories (images, CSS, JS downloaded by "Save page complete")
-# The HTML test pages themselves are committed; their _files/ companion folders are not
-test/pages/**/*_files/
+# Tesco test fixture pages (saved HTML — not redistributed)
+test/pages/
 
 # Claude Code local settings
 .claude/

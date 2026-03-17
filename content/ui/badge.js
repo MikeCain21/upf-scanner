@@ -29,6 +29,12 @@
     4: 'Ultra-processed food',
   };
 
+  /** Delay in ms before hiding the tooltip after mouseleave */
+  const TOOLTIP_HIDE_DELAY_MS = 120;
+
+  /** Maximum number of indicators to show in the tooltip */
+  const MAX_TOOLTIP_INDICATORS = 5;
+
   /** CSS class names for each NOVA score — these match styles.css */
   const NOVA_BADGE_CLASS = {
     1: 'nova-badge-1',
@@ -88,7 +94,7 @@
    */
   function _scheduleHideTooltip(tooltip) {
     clearTimeout(_hideTimer);
-    _hideTimer = setTimeout(() => { tooltip.style.display = 'none'; }, 120);
+    _hideTimer = setTimeout(() => { tooltip.style.display = 'none'; }, TOOLTIP_HIDE_DELAY_MS);
   }
 
   // ---------------------------------------------------------------------------
@@ -110,8 +116,8 @@
       text += `\n${reason}`;
     }
     if (Array.isArray(indicators) && indicators.length > 0) {
-      // Show up to 5 indicators to keep the tooltip readable
-      text += `\n\nIndicators: ${indicators.slice(0, 5).join(', ')}`;
+      // Show up to MAX_TOOLTIP_INDICATORS to keep the tooltip readable
+      text += `\n\nIndicators: ${indicators.slice(0, MAX_TOOLTIP_INDICATORS).join(', ')}`;
     }
     return text;
   }
@@ -169,14 +175,14 @@
   }
 
   /**
-   * Transitions an existing badge element to the loading state ("...").
-   * Call this before the async classification result is available.
+   * Transitions an existing badge element to the loading state ("NOVA ?").
+   * Uses the same width as a scored badge so layout does not shift on resolve.
    *
    * @param {HTMLElement} badgeEl
    */
   function setBadgeLoading(badgeEl) {
     badgeEl.className = 'nova-badge nova-badge-loading';
-    badgeEl.textContent = '...';
+    badgeEl.textContent = 'NOVA ?';
     badgeEl.setAttribute('aria-label', 'NOVA score loading');
   }
 

@@ -212,10 +212,10 @@ describe('Real product fixtures', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Phase 5 verification checklist
+// NOVA classification — verification suite
 // ---------------------------------------------------------------------------
 
-describe('Phase 5 verification checklist', () => {
+describe('classifyByIngredients — NOVA 4, 3, and 1 common cases', () => {
   it('ready meal (modified starch + E621 + maltodextrin) → NOVA 4', () => {
     const result = classifyByIngredients(['Water', 'Modified Maize Starch', 'E621', 'Maltodextrin']);
     expect(result.score).toBe(4);
@@ -249,10 +249,10 @@ describe('Phase 5 verification checklist', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Phase 10: NOVA 2 culinary + NOVA 3 processing markers (BUG-001)
+// NOVA 2 culinary + NOVA 3 processing markers
 // ---------------------------------------------------------------------------
 
-describe('Phase 10: NOVA 2 single culinary ingredient + NOVA 3 processing markers', () => {
+describe('classifyByIngredients — NOVA 2 single culinary ingredient + NOVA 3 processing markers', () => {
   it('Sunflower Oil (single culinary ingredient) → NOVA 2', () => {
     expect(classifyByIngredients(['Sunflower Oil']).score).toBe(2);
   });
