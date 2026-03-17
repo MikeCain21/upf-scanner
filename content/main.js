@@ -96,14 +96,16 @@
 
   /**
    * Returns true when the element is the main PDP product H1.
+   * Delegates to adapter.isMainProduct() when available; falls back to a
+   * generic H1 check so new adapters work without explicit overrides.
    * @param {Element} el
+   * @param {object} adapter
    * @returns {boolean}
    */
-  function isMainProduct(el) {
-    return (
-      el.tagName === 'H1' &&
-      el.getAttribute('data-auto') === 'pdp-product-title'
-    );
+  function isMainProduct(el, adapter) {
+    return typeof adapter.isMainProduct === 'function'
+      ? adapter.isMainProduct(el)
+      : el.tagName === 'H1'; // generic fallback
   }
 
   // ---------------------------------------------------------------------------
@@ -133,18 +135,28 @@
     const isValidOffUrl = url =>
       typeof url === 'string' && url.startsWith('https://world.openfoodfacts.org/product/');
 
-    // Extract barcode and ingredients from DOM upfront (both synchronous)
-    const barcode = typeof adapter.extractBarcode === 'function'
-      ? adapter.extractBarcode(document) : null;
+    // Extract all barcodes and ingredients from DOM upfront (both synchronous)
+    const barcodes = typeof adapter.extractBarcodes === 'function'
+      ? adapter.extractBarcodes(document)
+      : (typeof adapter.extractBarcode === 'function' ? [adapter.extractBarcode(document)].filter(Boolean) : []);
     const rawText = typeof adapter.extractIngredients === 'function'
       ? adapter.extractIngredients(document) : null;
 
-    log(`Barcode: ${barcode ?? 'none'} | Ingredients: ${rawText ? 'found' : 'none'}`);
+    log(`Barcodes: ${barcodes.length > 0 ? barcodes.join(', ') : 'none'} | Ingredients: ${rawText ? 'found' : 'none'}`);
 
-    // Fire both API calls simultaneously so the ingredient call is already in-flight
-    // while we wait for the higher-priority barcode result.
-    const barcodePromise = barcode
-      ? browser.runtime.sendMessage({ type: 'FETCH_PRODUCT', barcode }).catch(() => null)
+    // Fire all barcode lookups in parallel — ingredient analysis also fires simultaneously.
+    // Promise.any resolves with the first result that carries a valid NOVA score.
+    const barcodePromise = barcodes.length > 0
+      ? Promise.any(
+          barcodes.map(bc =>
+            browser.runtime.sendMessage({ type: 'FETCH_PRODUCT', barcode: bc })
+              .then(result => {
+                if (result?.success && isValidScore(result.novaScore)) return { result, barcode: bc };
+                return Promise.reject(new Error('no score'));
+              })
+              .catch(err => Promise.reject(err))
+          )
+        ).catch(() => null)
       : Promise.resolve(null);
 
     const ingredientPromise = rawText
@@ -156,15 +168,18 @@
       : Promise.resolve(null);
 
     // 1. Barcode result (priority — OpenFoodFacts product data is most authoritative)
-    const barcodeResult = await barcodePromise;
-    if (barcodeResult?.success && isValidScore(barcodeResult.novaScore)) {
-      log(`NOVA ${barcodeResult.novaScore} from barcode lookup (${barcodeResult.source})`);
+    const barcodeWinner = await barcodePromise;  // { result, barcode } or null
+    const barcodeResult = barcodeWinner?.result ?? null;
+    const winningBarcode = barcodeWinner?.barcode ?? null;
+
+    if (barcodeResult && isValidScore(barcodeResult.novaScore)) {
+      log(`NOVA ${barcodeResult.novaScore} from barcode lookup (${barcodeResult.source}, barcode ${winningBarcode})`);
       const offUrl = isValidOffUrl(barcodeResult.offUrl)
         ? barcodeResult.offUrl
-        : (barcode ? `https://world.openfoodfacts.org/product/${barcode}` : null);
-      return createBadge(barcodeResult.novaScore, `OpenFoodFacts (barcode ${barcode})`, barcodeResult.markers || [], offUrl);
+        : (winningBarcode ? `https://world.openfoodfacts.org/product/${winningBarcode}` : null);
+      return createBadge(barcodeResult.novaScore, `OpenFoodFacts (barcode ${winningBarcode})`, barcodeResult.markers || [], offUrl);
     }
-    log(`Barcode lookup returned no NOVA score (${barcodeResult?.source}) — checking ingredient analysis`);
+    log(`Barcode lookup returned no NOVA score — checking ingredient analysis`);
 
     // 2. Ingredient analysis result (already in-flight, may already be resolved)
     const ingredientResult = await ingredientPromise;
@@ -233,7 +248,7 @@
       const info = adapter.extractProductInfo(el);
       log(`Product ${index + 1}: ${info.name} (id: ${info.productId})`);
 
-      if (isMainProduct(el)) {
+      if (isMainProduct(el, adapter)) {
         // Claim early — prevents re-entry during async resolution.
         _badged.add(el);
         // Show "NOVA ?" immediately so the user has feedback while async

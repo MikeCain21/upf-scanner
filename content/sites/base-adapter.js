@@ -81,6 +81,19 @@ class BaseAdapter {
   }
 
   /**
+   * Returns all known EAN barcodes for the main product.
+   * Default wraps extractBarcode() — subclasses override when multiple
+   * barcodes are available (e.g. Waitrose barCodes array).
+   *
+   * @param {Document} doc
+   * @returns {string[]}
+   */
+  extractBarcodes(doc) {
+    const barcode = this.extractBarcode(doc);
+    return barcode ? [barcode] : [];
+  }
+
+  /**
    * Extracts the raw ingredient text from the product detail page.
    * Default returns null — subclasses must override for ingredient lookup.
    *
@@ -90,6 +103,18 @@ class BaseAdapter {
   // eslint-disable-next-line no-unused-vars
   extractIngredients(doc) {
     return null;
+  }
+
+  /**
+   * Returns true when the element is the main PDP product H1.
+   * Override in site adapters where the H1 can be identified by stable
+   * attributes (e.g. `data-auto`, `id`). The generic fallback is any H1.
+   *
+   * @param {Element} el
+   * @returns {boolean}
+   */
+  isMainProduct(el) {
+    return el.tagName === 'H1';
   }
 
   // ---------------------------------------------------------------------------
