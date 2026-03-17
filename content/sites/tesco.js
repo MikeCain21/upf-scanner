@@ -126,13 +126,39 @@ class TescoAdapter extends BaseAdapter {
 
   /**
    * Extracts the raw ingredient text from a Tesco product detail page.
-   * Tries selectors in priority order; accepts the first element with >10
-   * chars of text content (avoids matching empty divs or heading elements).
+   *
+   * Primary strategy: find the H3 with text "Ingredients" inside the
+   * ingredients accordion panel, then take its nextElementSibling. This is
+   * stable — it relies on the panel ID and semantic heading text, not on
+   * build-generated class names that change with Tesco deployments.
+   *
+   * Works for both single-component products (bread, yoghurt) and
+   * multi-component products (ready meals) where the ingredients panel
+   * is populated after the user expands it / page loads.
+   *
+   * Fallback: obfuscated CSS selectors kept for older saved test pages
+   * and any layout variants where the H3 strategy doesn't match.
    *
    * @param {Document} doc - The document to inspect
    * @returns {string|null} Raw ingredient text, or null if unavailable
    */
   extractIngredients(doc) {
+    // Primary: find <h3>Ingredients</h3> inside the ingredients accordion
+    // panel and take its next sibling element. No class names involved.
+    const panel = doc.querySelector('#accordion-panel-ingredients-panel');
+    if (panel) {
+      const headings = panel.querySelectorAll('h3');
+      for (const h3 of headings) {
+        if (/^ingredients$/i.test(h3.textContent.trim())) {
+          const sibling = h3.nextElementSibling;
+          if (sibling && sibling.textContent.trim().length > 10) {
+            return sibling.textContent.trim();
+          }
+        }
+      }
+    }
+
+    // Fallback: CSS selectors for older layouts and saved test pages
     for (const selector of TESCO_SELECTORS.INGREDIENT_SELECTORS) {
       const el = doc.querySelector(selector);
       if (el && el.textContent.trim().length > 10) {
