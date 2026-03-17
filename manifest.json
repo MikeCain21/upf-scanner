@@ -45,6 +45,26 @@
         "content/ui/styles.css"
       ],
       "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://www.waitrose.com/*"
+      ],
+      "js": [
+        "lib/browser-polyfill.js",
+        "content/sites/base-adapter.js",
+        "content/sites/registry.js",
+        "content/sites/waitrose.js",
+        "lib/ingredient-parser.js",
+        "lib/nova-indicators.js",
+        "lib/nova-classifier.js",
+        "content/ui/badge.js",
+        "content/main.js"
+      ],
+      "css": [
+        "content/ui/styles.css"
+      ],
+      "run_at": "document_idle"
     }
   ],
   "action": {

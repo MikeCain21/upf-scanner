@@ -90,6 +90,17 @@ class TescoAdapter extends BaseAdapter {
   }
 
   /**
+   * Returns true when the element is the main Tesco PDP product H1.
+   * Uses the stable data-auto attribute set by Tesco's React renderer.
+   *
+   * @param {Element} el
+   * @returns {boolean}
+   */
+  isMainProduct(el) {
+    return el.tagName === 'H1' && el.getAttribute('data-auto') === 'pdp-product-title';
+  }
+
+  /**
    * Detects all product elements on the page.
    *
    * On product detail pages, returns [mainProductH1, ...relatedTiles].

@@ -118,18 +118,39 @@
    * takes priority. Falls back to local classifier if both APIs yield no score.
    * Returns a Promise that resolves to a scored badge element (or error badge).
    *
+   * Sends a SET_PAGE_NOVA message to the background on classification so the
+   * toolbar badge and popup reflect the current product's NOVA score.
+   *
    * Parallel strategy: worst case drops from ~18s (8s + 10s sequential) to ~10s
    * (max of the two timeouts) on a cold cache.
    *
    * @param {object} adapter
    * @param {string|null} productId - Tesco product ID (passed through to background)
+   * @param {string} productName    - Display name for the popup
    * @returns {Promise<HTMLElement>} Badge element
    */
-  async function classifyMainProduct(adapter, productId) {
+  async function classifyMainProduct(adapter, productId, productName) {
     const { createBadge, setBadgeError } = window.__novaExt;
 
     // Validates novaScore is an integer in [1, 4]
     const isValidScore = n => Number.isInteger(n) && n >= 1 && n <= 4;
+
+    /**
+     * Notifies the background of the resolved NOVA score so the toolbar badge
+     * and popup can reflect the current product. Fire-and-forget.
+     * @param {number} novaScore
+     * @param {string|null} [barcode]
+     * @param {string[]} [markers]
+     */
+    const notifyBackground = (novaScore, barcode = null, markers = []) => {
+      browser.runtime.sendMessage({
+        type: 'SET_PAGE_NOVA',
+        novaScore,
+        productName: productName || null,
+        barcode: barcode || null,
+        markers,
+      }).catch(() => {}); // ignore — background may be inactive
+    };
 
     // Validates offUrl is a safe OpenFoodFacts product URL
     const isValidOffUrl = url =>
@@ -146,8 +167,9 @@
 
     // Fast path: run local classifier synchronously before any network calls.
     // NOVA 1 (≤3 ingredients, no processing signals) is unambiguous — fresh produce
-    // needs no OFF confirmation. All other scores proceed through the full pipeline.
-    if (rawText) {
+    // needs no OFF confirmation. Only valid when no barcodes are available; when a
+    // barcode exists, OFF is authoritative and must be consulted first.
+    if (barcodes.length === 0 && rawText) {
       const parseIngredients = window.__novaExt?.parseIngredients;
       const classifyByIngredients = window.__novaExt?.classifyByIngredients;
       if (typeof parseIngredients === 'function' && typeof classifyByIngredients === 'function') {
@@ -155,7 +177,8 @@
         if (ingredients?.length > 0) {
           const localResult = classifyByIngredients(ingredients);
           if (localResult?.score === 1) {
-            log(`NOVA 1 from local classifier (fast path) — skipping OFF lookup`);
+            log(`NOVA 1 from local classifier (fast path, no barcode) — skipping OFF lookup`);
+            notifyBackground(1, null, localResult.indicators || []);
             return createBadge(1, localResult.reason, localResult.indicators || []);
           }
         }
@@ -195,6 +218,7 @@
       const offUrl = isValidOffUrl(barcodeResult.offUrl)
         ? barcodeResult.offUrl
         : (winningBarcode ? `https://world.openfoodfacts.org/product/${winningBarcode}` : null);
+      notifyBackground(barcodeResult.novaScore, winningBarcode, barcodeResult.markers || []);
       return createBadge(barcodeResult.novaScore, `OpenFoodFacts (barcode ${winningBarcode})`, barcodeResult.markers || [], offUrl);
     }
     log(`Barcode lookup returned no NOVA score — checking ingredient analysis`);
@@ -203,6 +227,7 @@
     const ingredientResult = await ingredientPromise;
     if (ingredientResult?.success && isValidScore(ingredientResult.novaScore)) {
       log(`NOVA ${ingredientResult.novaScore} from OFF ingredient analysis`);
+      notifyBackground(ingredientResult.novaScore, null, ingredientResult.markers || []);
       return createBadge(ingredientResult.novaScore, 'OpenFoodFacts ingredient analysis', ingredientResult.markers || []);
     }
     log('OFF ingredient analysis returned no score — trying local classifier');
@@ -217,6 +242,7 @@
           const result = classifyByIngredients(ingredients);
           if (result) {
             log(`NOVA ${result.score} from local classifier (confidence: ${result.confidence})`);
+            notifyBackground(result.score, null, result.indicators || []);
             return createBadge(result.score, result.reason, result.indicators || []);
           }
         }
@@ -276,7 +302,7 @@
         setBadgeLoading(loadingBadge);
         injectBadge(el, loadingBadge);
         log(`Loading badge injected for: ${info.name}`);
-        classifyMainProduct(adapter, info.productId).then(badge => {
+        classifyMainProduct(adapter, info.productId, info.name).then(badge => {
           log(`Classification resolved — replacing loading badge (result: "${badge.textContent}")`);
           loadingBadge.replaceWith(badge);
         });

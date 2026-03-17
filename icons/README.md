@@ -1,39 +1,33 @@
 # Icons Folder
 
-This folder should contain the extension icons in PNG format.
+This folder contains the extension icons in PNG format, generated from SVG sources.
 
-## Required Icons
+## Files
 
-- `icon16.png` - 16x16 pixels (toolbar)
-- `icon32.png` - 32x32 pixels (toolbar retina)
-- `icon48.png` - 48x48 pixels (extension management)
-- `icon128.png` - 128x128 pixels (Chrome Web Store, extension management)
+- `icon.svg` — Source SVG for all toolbar/management icons (128×128 canvas)
+- `readme-banner.svg` — Source SVG for the README banner (600×160)
+- `generate-icons.js` — Node script that converts SVGs → PNGs using `sharp`
+- `icon16.png` — 16×16 toolbar icon
+- `icon32.png` — 32×32 toolbar retina icon
+- `icon48.png` — 48×48 extension management icon
+- `icon128.png` — 128×128 Chrome Web Store / extension management icon
+- `readme-banner.png` — Banner image embedded in README.md
 
-## Temporary Workaround for Phase 1
+## Design
 
-For Phase 1 testing, you can:
-1. Create simple colored squares using an image editor
-2. Use a red circle with "NOVA 4" text
-3. Use online icon generators
+- **Icon**: White bold "N" on green (#28a745) rounded square
+- **Banner**: "NOVA" wordmark + tagline + four-segment NOVA 1–4 colour bar
+- **Colour palette**: `#28a745` green · `#ffc107` yellow · `#fd7e14` orange · `#dc3545` red
 
-## Design Guidelines (for later)
+## Regenerating icons
 
-- Use red color (#dc3545) to match NOVA 4 warning
-- Include visual indicator of ultra-processed foods
-- Keep design simple and recognizable at small sizes
-- Transparent background recommended
+If you need to update the icons, edit the SVG source files and then run:
+
+```
+npm install   # ensures sharp is available
+node icons/generate-icons.js
+```
 
 ## Status
 
-⚠️ **Phase 1:** Placeholder - icons not yet created
-📋 **Phase 10:** Will create proper icons before release
-
-## Quick Test Icons
-
-You can create quick test icons by:
-1. Opening any image editor (Paint, GIMP, Photoshop, etc.)
-2. Creating a red square with white text "N4"
-3. Exporting at 16x16, 32x32, 48x48, and 128x128 pixels
-4. Saving as PNG files
-
-For now, the extension may show Chrome's default icon if these files are missing.
+✅ Proper icons in place — green "N" design matching NOVA brand colours

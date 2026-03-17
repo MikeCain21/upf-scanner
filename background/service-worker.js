@@ -37,6 +37,101 @@ const CACHE_PREFIX = 'off_';
 // Cache TTL: 7 days in milliseconds.
 const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
+// Derived from manifest content_scripts.matches — no manual sync needed when adding adapters.
+const ALLOWED_ORIGINS = chrome.runtime.getManifest()
+  .content_scripts
+  .flatMap(entry => entry.matches)
+  .map(pattern => new URL(pattern.replace(/\/\*$/, '')).origin);
+
+// ---------------------------------------------------------------------------
+// Per-tab NOVA state + toolbar badge
+// ---------------------------------------------------------------------------
+
+/** In-memory store of the NOVA result for the currently-viewed product per tab. */
+const tabNovaState = new Map();
+
+/** Session storage key prefix for per-tab NOVA state. */
+const SESSION_TAB_PREFIX = 'nova_tab_';
+
+/**
+ * Saves per-tab NOVA state to both the in-memory cache and chrome.storage.session
+ * so the state survives service worker idle-termination.
+ *
+ * @param {number} tabId
+ * @param {Object} state
+ * @returns {Promise<void>}
+ */
+async function saveTabState(tabId, state) {
+  tabNovaState.set(tabId, state);
+  await chrome.storage.session.set({ [SESSION_TAB_PREFIX + tabId]: state });
+}
+
+/**
+ * Loads per-tab NOVA state from the in-memory cache, falling back to
+ * chrome.storage.session when the service worker was restarted and the
+ * in-memory Map is empty.
+ *
+ * @param {number} tabId
+ * @returns {Promise<Object|null>}
+ */
+async function loadTabState(tabId) {
+  if (tabNovaState.has(tabId)) return tabNovaState.get(tabId);
+  const result = await chrome.storage.session.get(SESSION_TAB_PREFIX + tabId);
+  const state = result[SESSION_TAB_PREFIX + tabId] || null;
+  if (state) tabNovaState.set(tabId, state); // warm the in-memory cache
+  return state;
+}
+
+/**
+ * Removes per-tab NOVA state from both the in-memory cache and
+ * chrome.storage.session.
+ *
+ * @param {number} tabId
+ * @returns {Promise<void>}
+ */
+async function clearTabState(tabId) {
+  tabNovaState.delete(tabId);
+  await chrome.storage.session.remove(SESSION_TAB_PREFIX + tabId);
+}
+
+/** NOVA score → badge background colour */
+const BADGE_COLORS = {
+  1: '#4CAF50',
+  2: '#FFC107',
+  3: '#FF9800',
+  4: '#E53935',
+};
+
+/**
+ * Updates the toolbar badge for a tab to reflect its current NOVA score.
+ * Clears the badge when novaScore is null / out of range.
+ *
+ * @param {number} tabId
+ * @param {number|null} novaScore
+ */
+function updateBadge(tabId, novaScore) {
+  if (!novaScore || !BADGE_COLORS[novaScore]) {
+    chrome.action.setBadgeText({ tabId, text: '' });
+    return;
+  }
+  chrome.action.setBadgeText({ tabId, text: String(novaScore) });
+  chrome.action.setBadgeBackgroundColor({ tabId, color: BADGE_COLORS[novaScore] });
+  chrome.action.setBadgeTextColor({ tabId, color: '#FFFFFF' });
+}
+
+// Clear per-tab state when a tab is closed.
+chrome.tabs.onRemoved.addListener((tabId) => {
+  clearTabState(tabId).catch(() => {});
+});
+
+// Clear per-tab state (and badge) when a tab navigates to a new URL.
+chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
+  if (changeInfo.url) {
+    clearTabState(tabId).catch(() => {});
+    updateBadge(tabId, null);
+  }
+});
+
 // ---------------------------------------------------------------------------
 // Pure helpers (mirrored in lib/openfoodfacts.js for Jest testing)
 // ---------------------------------------------------------------------------
@@ -325,13 +420,53 @@ async function lookupProduct(barcode) {
 // ---------------------------------------------------------------------------
 
 browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  console.log('[NOVA Background] Message received:', message.type, 'from', sender.tab?.url);
+  console.log('[NOVA Background] Message received:', message.type, 'from', sender.tab?.url || 'popup');
 
-  // Validate sender: must be a tab from a known content script origin
+  // ---------------------------------------------------------------------------
+  // Extension-internal messages (popup → background): no tab/origin check needed
+  // ---------------------------------------------------------------------------
+
+  if (message.type === 'GET_PAGE_NOVA') {
+    if (message.tabId) {
+      loadTabState(message.tabId)
+        .then(state => sendResponse(state || { novaScore: null, productName: null, barcode: null }))
+        .catch(() => sendResponse({ novaScore: null, productName: null, barcode: null }));
+    } else {
+      sendResponse({ novaScore: null, productName: null, barcode: null });
+    }
+    return true; // keep channel open for async response
+  }
+
+  if (message.type === 'CLEAR_CACHE') {
+    (async () => {
+      const allData = await browser.storage.local.get(null);
+      const cacheKeys = Object.keys(allData).filter(k =>
+        k.startsWith('product_') || k.startsWith('ingredients_') || k.startsWith(CACHE_PREFIX)
+      );
+      await browser.storage.local.remove(cacheKeys);
+      sendResponse({ cleared: cacheKeys.length });
+    })();
+    return true; // async
+  }
+
+  // ---------------------------------------------------------------------------
+  // Content script messages — validate sender origin before processing
+  // ---------------------------------------------------------------------------
+
   const senderOrigin = sender.origin || new URL(sender.tab?.url || 'about:blank').origin;
-  if (!sender.tab || !senderOrigin.includes('tesco.com')) {
+  if (!sender.tab || !ALLOWED_ORIGINS.some(o => senderOrigin.startsWith(o))) {
     console.warn('[NOVA Background] Rejected message from unexpected sender:', senderOrigin);
     sendResponse({ success: false, error: 'Unauthorized sender' });
+    return false;
+  }
+
+  if (message.type === 'SET_PAGE_NOVA') {
+    const tabId = sender.tab.id;
+    const { novaScore, productName, barcode, markers } = message;
+    const state = { novaScore: novaScore || null, productName: productName || null, barcode: barcode || null, markers: Array.isArray(markers) ? markers : [] };
+    saveTabState(tabId, state).catch(() => {});
+    updateBadge(tabId, novaScore || null);
+    sendResponse({ success: true });
     return false;
   }
 
@@ -368,19 +503,6 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
       .catch(err => sendResponse({ success: false, error: err.message }));
 
     return true; // Keeps the message channel open for the async response
-  }
-
-  if (message.type === 'CLEAR_CACHE') {
-    // browser.storage.local.get/remove return Promises — use async IIFE
-    (async () => {
-      const allData = await browser.storage.local.get(null);
-      const cacheKeys = Object.keys(allData).filter(k =>
-        k.startsWith('product_') || k.startsWith('ingredients_') || k.startsWith(CACHE_PREFIX)
-      );
-      await browser.storage.local.remove(cacheKeys);
-      sendResponse({ cleared: cacheKeys.length });
-    })();
-    return true; // async
   }
 
   sendResponse({ success: false, error: 'Unknown message type' });

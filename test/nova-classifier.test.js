@@ -282,3 +282,27 @@ describe('classifyByIngredients — NOVA 2 single culinary ingredient + NOVA 3 p
     expect(classifyByIngredients(['Cabbage', 'Salt', 'Lacto-fermented']).score).toBe(3);
   });
 });
+
+// Regression: Tesco Pure Sunflower Oil (product 254918228) — ADR-018
+describe('Tesco sunflower oil fast-path regression', () => {
+  it('marketing copy tokens produce NOVA 1 from local classifier (known limitation — fix lives in pipeline guard)', () => {
+    // Parsing "Made from 100% sunflower seeds, great for shallow frying" produces these tokens.
+    // The classifier legitimately returns NOVA 1 (Rule 4: ≤3 tokens, no signals).
+    // The pipeline guard (barcodes.length === 0) prevents this from reaching the badge.
+    const result = classifyByIngredients(['Made from 100% sunflower seeds', 'great for shallow frying']);
+    expect(result.score).toBe(1);
+    expect(result.confidence).toBe(0.5);
+  });
+
+  it('real ingredient "Sunflower Oil" correctly classifies as NOVA 2 (Rule 3b)', () => {
+    const result = classifyByIngredients(['Sunflower Oil']);
+    expect(result.score).toBe(2);
+    expect(result.reason).toBe('Processed culinary ingredient (oil, fat, salt, or sugar)');
+  });
+
+  it('real ingredient "Sunflower Oil." (trailing period) classifies as NOVA 2 (Rule 3b)', () => {
+    // NOVA3_CULINARY_RE uses \b; period acts as a word boundary so "Oil." still matches.
+    const result = classifyByIngredients(['Sunflower Oil.']);
+    expect(result.score).toBe(2);
+  });
+});
