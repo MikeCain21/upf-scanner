@@ -42,27 +42,21 @@ const TESCO_SELECTORS = {
   // Canonical URL tag — used to extract main product ID from saved pages
   CANONICAL: 'link[rel="canonical"]',
 
-  // Ingredient text on PDP — multiple selectors tried in priority order so that
-  // future Tesco layout changes degrade gracefully rather than silently failing.
+  // Ingredient text on PDP — stable ID + structural selectors only.
+  // CSS module class names (e.g. UKSL9q_content, OobGYfu9hvCUvH6) are explicitly
+  // avoided — they are generated hashes that change with every Tesco build.
   //
-  // Two-panel strategy (as of 2026-03-01 Tesco redesign):
-  //   Tesco moved ingredient text from #accordion-panel-ingredients-panel to
-  //   #accordion-panel-product-description. The old panel now holds Nutrition
-  //   and Dietary info only.
+  // Strategy: find the div immediately following the "Ingredients" h3 heading
+  // inside the semantic accordion panel IDs. These IDs are content-driven
+  // names (not generated hashes) and have been stable across Tesco redesigns.
   //
-  //   For complex products (bread, yoghurt, crisps): PRIMARY finds the full
-  //   ingredient list (100s chars) in the ingredients panel and passes.
-  //   For simple products (sunflower oil, plain cheddar): PRIMARY returns only
-  //   "Vegan" or similar (~5 chars) which fails the >10 char length filter,
-  //   so F1 (product-description panel) returns the actual ingredient.
-  //   F2/F3 are data-testid variants that survive panel ID prefix renames.
-  //   F4 is the old h3+div pattern for saved test pages and Tesco rollbacks.
+  //   Primary:   dedicated ingredients panel — present on complex products
+  //   Fallback1: product-description panel — some products embed ingredients here
+  //   Fallback2: any panel whose ID contains "ingredient" — survives panel renames
   INGREDIENT_SELECTORS: [
-    '#accordion-panel-ingredients-panel .UKSL9q_content > div',
-    '#accordion-panel-product-description .UKSL9q_content > div',
-    '[data-testid="accordion-panel"][id*="ingredients"] .UKSL9q_content > div',
-    '[data-testid="accordion-panel"][id*="product-description"] .UKSL9q_content > div',
     '#accordion-panel-ingredients-panel h3 + div',
+    '#accordion-panel-product-description h3 + div',
+    '[id*="accordion-panel"][id*="ingredient"] h3 + div',
   ],
 };
 

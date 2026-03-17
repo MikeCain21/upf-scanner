@@ -158,7 +158,7 @@
 
     // Extract all barcodes and ingredients from DOM upfront (both synchronous)
     const barcodes = typeof adapter.extractBarcodes === 'function'
-      ? adapter.extractBarcodes(document)
+      ? await adapter.extractBarcodes(document)
       : (typeof adapter.extractBarcode === 'function' ? [adapter.extractBarcode(document)].filter(Boolean) : []);
     const rawText = typeof adapter.extractIngredients === 'function'
       ? adapter.extractIngredients(document) : null;
