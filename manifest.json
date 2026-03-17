@@ -27,6 +27,8 @@
       ],
       "js": [
         "lib/browser-polyfill.js",
+        "content/sites/base-adapter.js",
+        "content/sites/registry.js",
         "content/sites/tesco.js",
         "lib/ingredient-parser.js",
         "lib/nova-indicators.js",

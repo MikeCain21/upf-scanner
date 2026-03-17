@@ -5,7 +5,10 @@
  * and badge display on supported supermarket pages.
  *
  * Load order (manifest.json):
- *   content/sites/tesco.js        → window.__novaExt.adapters
+ *   lib/browser-polyfill.js       → browser.* API
+ *   content/sites/base-adapter.js → window.__novaExt.BaseAdapter
+ *   content/sites/registry.js     → window.__novaExt.registry
+ *   content/sites/{site}.js       → self-registers via registry.register()
  *   lib/ingredient-parser.js      → window.__novaExt.parseIngredients
  *   lib/nova-indicators.js        → window.__novaExt.detectIndicators
  *   lib/nova-classifier.js        → window.__novaExt.classifyByIngredients
@@ -79,12 +82,13 @@
   // ---------------------------------------------------------------------------
 
   /**
-   * Finds the first registered adapter that supports the current page.
+   * Finds the registered adapter for the current page URL via the registry.
    * @returns {object|null}
    */
   function findAdapter() {
-    const adapters = window.__novaExt?.adapters || [];
-    return adapters.find((adapter) => adapter.isSupported()) || null;
+    const registry = window.__novaExt?.registry;
+    if (!registry) return null;
+    return registry.getAdapter(window.location.href);
   }
 
   // ---------------------------------------------------------------------------
