@@ -160,21 +160,35 @@ class WaitroseAdapter extends BaseAdapter {
    *
    * Primary: reads ingredients string from the __NEXT_DATA__ script tag — clean
    * text, no DOM parsing needed. Available before any accordion interaction.
-   * Fallback: #ingredients-region element text (may be empty if accordion
+   * Fallback 1: #ingredients-region element text (may be empty if accordion
    * is collapsed and the content has not been loaded).
+   * Fallback 2: bopStatutoryDescription — the statutory product description
+   * for single-ingredient fresh produce (e.g. "Banana") that has no ingredient
+   * list because the product itself is the only ingredient.
    *
    * @param {Document} doc
    * @returns {string|null} Raw ingredient text, or null if unavailable
    */
   extractIngredients(doc) {
     const nextData = this._getNextData(doc);
-    const text = nextData?.props?.pageProps?.product?.contents?.ingredients;
+    const product = nextData?.props?.pageProps?.product;
+
+    // Primary: structured ingredients text from __NEXT_DATA__
+    const text = product?.contents?.ingredients;
     if (text && text.trim().length > 10) return text.trim();
 
     // DOM fallback — accordion #ingredients-region
     const el = doc.querySelector(WAITROSE_SELECTORS.INGREDIENT_FALLBACK);
     const domText = el?.textContent?.trim();
-    return (domText && domText.length > 10) ? domText : null;
+    if (domText && domText.length > 10) return domText;
+
+    // Final fallback: statutory description for single-ingredient products (e.g. "Banana").
+    // Fresh produce has no ingredient list — the product itself is the ingredient.
+    // Lower threshold (≥ 2) because structured field values are reliably short.
+    const statutory = product?.contents?.bopStatutoryDescription?.trim();
+    if (statutory && statutory.length >= 2) return statutory;
+
+    return null;
   }
 
   // ---------------------------------------------------------------------------

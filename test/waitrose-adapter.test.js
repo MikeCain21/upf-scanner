@@ -357,4 +357,30 @@ describe('extractIngredients — DOM fallback', () => {
       'Carbonated Water, Citric Acid, Natural Flavourings.'
     );
   });
+
+  it('falls back to bopStatutoryDescription when ingredients absent and DOM text too short', () => {
+    const doc = fakeDocWithNextData({
+      contents: { bopStatutoryDescription: 'Banana' },
+    });
+    expect(adapter.extractIngredients(doc)).toBe('Banana');
+  });
+
+  it('returns null when bopStatutoryDescription is a single char', () => {
+    const doc = fakeDocWithNextData({
+      contents: { bopStatutoryDescription: 'A' },
+    });
+    expect(adapter.extractIngredients(doc)).toBeNull();
+  });
+
+  it('prefers contents.ingredients over bopStatutoryDescription', () => {
+    const doc = fakeDocWithNextData({
+      contents: {
+        ingredients: 'Carbonated Water, Sugar, Citric Acid, Flavourings.',
+        bopStatutoryDescription: 'Soft Drink',
+      },
+    });
+    expect(adapter.extractIngredients(doc)).toBe(
+      'Carbonated Water, Sugar, Citric Acid, Flavourings.'
+    );
+  });
 });
