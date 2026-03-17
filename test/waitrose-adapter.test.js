@@ -276,10 +276,15 @@ describe('extractBarcodes', () => {
     expect(adapter.extractBarcodes(doc)).toEqual(['3176575493930', '3329770062467']);
   });
 
-  it('returns all 5 barcodes when product has 5 entries', () => {
-    const barcodes = ['aaa', 'bbb', 'ccc', 'ddd', 'eee'];
-    const doc = fakeDocWithNextData({ barCodes: barcodes });
-    expect(adapter.extractBarcodes(doc)).toHaveLength(5);
+  it('returns only EAN-8 and EAN-13 codes, filtering short internal codes', () => {
+    // Mirrors real Waitrose banana data: ['0267680000007', '3827']
+    const doc = fakeDocWithNextData({ barCodes: ['0267680000007', '3827'] });
+    expect(adapter.extractBarcodes(doc)).toEqual(['0267680000007']);
+  });
+
+  it('returns EAN-8 codes alongside EAN-13 codes', () => {
+    const doc = fakeDocWithNextData({ barCodes: ['12345678', '1234567890123', '999'] });
+    expect(adapter.extractBarcodes(doc)).toEqual(['12345678', '1234567890123']);
   });
 
   it('falls back to JSON-LD when __NEXT_DATA__ barCodes absent', () => {

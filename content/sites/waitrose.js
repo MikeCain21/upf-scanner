@@ -144,7 +144,13 @@ class WaitroseAdapter extends BaseAdapter {
   extractBarcodes(doc) {
     const nextData = this._getNextData(doc);
     const barCodes = nextData?.props?.pageProps?.product?.barCodes;
-    if (Array.isArray(barCodes) && barCodes.length > 0) return barCodes;
+    if (Array.isArray(barCodes) && barCodes.length > 0) {
+      // Only EAN-8 (8 digits) and EAN-13 (13 digits) are valid product database codes.
+      // Waitrose also stores short internal codes (e.g. 4-digit line refs) that coincidentally
+      // match unrelated OFF products — filtering them out prevents false classifications.
+      const valid = barCodes.filter(bc => /^\d{8}$|^\d{13}$/.test(bc));
+      if (valid.length > 0) return valid;
+    }
     const single = this._extractJsonLd(doc);
     return single ? [single] : [];
   }
