@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
-  "name": "NOVA Extension",
-  "version": "1.2.0",
+  "name": "UPF Scanner \u2013 Spot Ultra-Processed Food",
+  "version": "1.2.1",
   "description": "Identify ultra-processed foods on UK supermarket websites using NOVA classification",
   "author": "NOVA Extension Contributors",
   "icons": {
@@ -85,6 +85,54 @@
         "content/ui/styles.css"
       ],
       "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://www.asda.com/*"],
+      "js": [
+        "lib/browser-polyfill.js",
+        "content/sites/base-adapter.js",
+        "content/sites/registry.js",
+        "content/sites/asda.js",
+        "lib/ingredient-parser.js",
+        "lib/nova-indicators.js",
+        "lib/nova-classifier.js",
+        "content/ui/badge.js",
+        "content/main.js"
+      ],
+      "css": ["content/ui/styles.css"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://groceries.morrisons.com/*"],
+      "js": [
+        "lib/browser-polyfill.js",
+        "content/sites/base-adapter.js",
+        "content/sites/registry.js",
+        "content/sites/morrisons.js",
+        "lib/ingredient-parser.js",
+        "lib/nova-indicators.js",
+        "lib/nova-classifier.js",
+        "content/ui/badge.js",
+        "content/main.js"
+      ],
+      "css": ["content/ui/styles.css"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://www.ocado.com/*"],
+      "js": [
+        "lib/browser-polyfill.js",
+        "content/sites/base-adapter.js",
+        "content/sites/registry.js",
+        "content/sites/ocado.js",
+        "lib/ingredient-parser.js",
+        "lib/nova-indicators.js",
+        "lib/nova-classifier.js",
+        "content/ui/badge.js",
+        "content/main.js"
+      ],
+      "css": ["content/ui/styles.css"],
+      "run_at": "document_idle"
     }
   ],
   "action": {
@@ -95,7 +143,7 @@
       "48": "icons/icon48.png",
       "128": "icons/icon128.png"
     },
-    "default_title": "NOVA Extension"
+    "default_title": "UPF Scanner \u2013 Spot Ultra-Processed Food"
   },
   "web_accessible_resources": [
     {
