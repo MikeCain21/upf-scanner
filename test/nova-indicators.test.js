@@ -244,6 +244,22 @@ describe('Meat-substitute / plant-based indicators', () => {
   });
 
   // Regression: the Quorn sausage ingredient list that triggered the bug
+  // Dairy-derived industrial ingredients — Monteiro NOVA 4 spec
+  it('casein is a NOVA 4 indicator', () => {
+    const { indicators } = detectIndicators(['casein']);
+    expect(indicators.length).toBeGreaterThan(0);
+  });
+
+  it('lactose is a NOVA 4 indicator', () => {
+    const { indicators } = detectIndicators(['lactose']);
+    expect(indicators.length).toBeGreaterThan(0);
+  });
+
+  it('whey protein is a NOVA 4 indicator', () => {
+    const { indicators } = detectIndicators(['whey protein concentrate']);
+    expect(indicators.length).toBeGreaterThan(0);
+  });
+
   it('Quorn mycoprotein sausages → count ≥ 3 (mycoprotein + flavouring + textured protein)', () => {
     const tokens = [
       'Mycoprotein (41%)',
@@ -301,6 +317,158 @@ describe('detectIndicators — E-number boundaries, modified starch, and safe in
 
   it('E100 → count === 0 (natural colour, not in NOVA 4 set)', () => {
     const { count } = detectIndicators(['E100']);
+    expect(count).toBe(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// OFF alignment additions — new indicators (ADR-010 update)
+// ---------------------------------------------------------------------------
+
+describe('OFF alignment — lecithin (E322)', () => {
+  it('Soy Lecithin → count 1, indicator lecithin', () => {
+    const { count, indicators } = detectIndicators(['Soy Lecithin']);
+    expect(count).toBeGreaterThanOrEqual(1);
+    expect(indicators).toContain('lecithin');
+  });
+
+  it('Sunflower Lecithin → flagged as lecithin', () => {
+    const { indicators } = detectIndicators(['Sunflower Lecithin']);
+    expect(indicators).toContain('lecithin');
+  });
+
+  it('E322 standalone → count 1, indicator E322', () => {
+    const { count, indicators } = detectIndicators(['E322']);
+    expect(count).toBe(1);
+    expect(indicators).toContain('E322');
+  });
+
+  it('Emulsifier (E322) embedded → flagged', () => {
+    const { indicators } = detectIndicators(['Emulsifier (E322)']);
+    expect(indicators).toContain('E322');
+  });
+
+  it('plain Lecithin → flagged as lecithin', () => {
+    const { indicators } = detectIndicators(['Lecithin']);
+    expect(indicators).toContain('lecithin');
+  });
+});
+
+describe('OFF alignment — phosphates (E450, E451, E452)', () => {
+  it('E450 standalone → flagged', () => {
+    const { indicators } = detectIndicators(['E450', 'Water']);
+    expect(indicators).toContain('E450');
+  });
+
+  it('E451 standalone → flagged', () => {
+    const { indicators } = detectIndicators(['E451']);
+    expect(indicators).toContain('E451');
+  });
+
+  it('E452 standalone → flagged', () => {
+    const { indicators } = detectIndicators(['E452']);
+    expect(indicators).toContain('E452');
+  });
+
+  it('E442 (ammonium phosphatides) → flagged', () => {
+    const { indicators } = detectIndicators(['E442']);
+    expect(indicators).toContain('E442');
+  });
+});
+
+describe('OFF alignment — modified starch E-number codes', () => {
+  it('E1442 (hydroxypropyl distarch phosphate) → flagged', () => {
+    const { indicators } = detectIndicators(['E1442']);
+    expect(indicators).toContain('E1442');
+  });
+
+  it('Modified Starch (E1442) embedded → flagged', () => {
+    const { indicators } = detectIndicators(['Modified Starch (E1442)']);
+    expect(indicators).toContain('E1442');
+  });
+
+  it('E1404 → flagged', () => {
+    const { indicators } = detectIndicators(['E1404']);
+    expect(indicators).toContain('E1404');
+  });
+});
+
+describe('OFF alignment — sweeteners and syrups', () => {
+  it('Glucose Syrup → count 1, indicator glucose syrup', () => {
+    const { count, indicators } = detectIndicators(['Glucose Syrup', 'Sugar']);
+    expect(count).toBeGreaterThanOrEqual(1);
+    expect(indicators).toContain('glucose syrup');
+  });
+
+  it('Corn Syrup Solids → flagged as corn syrup', () => {
+    const { indicators } = detectIndicators(['Corn Syrup Solids']);
+    expect(indicators).toContain('corn syrup');
+  });
+
+  it('Corn Syrup (without Solids) → flagged as corn syrup', () => {
+    const { indicators } = detectIndicators(['Corn Syrup']);
+    expect(indicators).toContain('corn syrup');
+  });
+
+  it('Dextrose → flagged', () => {
+    const { indicators } = detectIndicators(['Dextrose', 'Maltodextrin']);
+    expect(indicators).toContain('dextrose');
+    expect(indicators).toContain('maltodextrin');
+  });
+});
+
+describe('OFF alignment — hydrogenated fats', () => {
+  it('Fully Hydrogenated Palm Oil → flagged as hydrogenated fat', () => {
+    const { indicators } = detectIndicators(['Fully Hydrogenated Palm Oil']);
+    expect(indicators).toContain('hydrogenated fat');
+  });
+
+  it('Full Hydrogenated Vegetable Fat → flagged', () => {
+    const { indicators } = detectIndicators(['Full Hydrogenated Vegetable Fat']);
+    expect(indicators).toContain('hydrogenated fat');
+  });
+
+  it('Partially Hydrogenated Soybean Oil → still flagged (regression)', () => {
+    const { indicators } = detectIndicators(['Partially Hydrogenated Soybean Oil']);
+    expect(indicators).toContain('partially hydrogenated fat');
+  });
+});
+
+describe('OFF alignment — protein concentrate', () => {
+  it('Pea Protein Concentrate → flagged as protein concentrate', () => {
+    const { indicators } = detectIndicators(['Pea Protein Concentrate']);
+    expect(indicators).toContain('protein concentrate');
+  });
+
+  it('Wheat Protein Concentrate → flagged', () => {
+    const { indicators } = detectIndicators(['Wheat Protein Concentrate']);
+    expect(indicators).toContain('protein concentrate');
+  });
+});
+
+describe('OFF alignment — regression: safe ingredients must NOT trigger', () => {
+  it('Corn Starch (plain) → count === 0', () => {
+    const { count } = detectIndicators(['Corn Starch']);
+    expect(count).toBe(0);
+  });
+
+  it('Sunflower Oil (plain) → count === 0', () => {
+    const { count } = detectIndicators(['Sunflower Oil']);
+    expect(count).toBe(0);
+  });
+
+  it('Rapeseed Oil (plain) → count === 0', () => {
+    const { count } = detectIndicators(['Rapeseed Oil']);
+    expect(count).toBe(0);
+  });
+
+  it('Egg White (plain) → count === 0', () => {
+    const { count } = detectIndicators(['Egg White']);
+    expect(count).toBe(0);
+  });
+
+  it('Corn Flour (plain) → count === 0', () => {
+    const { count } = detectIndicators(['Corn Flour']);
     expect(count).toBe(0);
   });
 });
