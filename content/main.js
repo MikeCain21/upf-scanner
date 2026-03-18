@@ -157,9 +157,15 @@
       typeof url === 'string' && url.startsWith('https://world.openfoodfacts.org/product/');
 
     // Extract all barcodes and ingredients from DOM upfront (both synchronous)
-    const barcodes = typeof adapter.extractBarcodes === 'function'
+    const rawBarcodes = typeof adapter.extractBarcodes === 'function'
       ? await adapter.extractBarcodes(document)
       : (typeof adapter.extractBarcode === 'function' ? [adapter.extractBarcode(document)].filter(Boolean) : []);
+
+    // GS1 rule: EAN-13s starting with '2' are retailer-assigned variable-weight
+    // barcodes (e.g. Sainsbury's internal EANs). They are never indexed by
+    // OpenFoodFacts, so filtering globally here avoids wasted API calls from
+    // any adapter.
+    const barcodes = rawBarcodes.filter(bc => !/^2/.test(String(bc)));
     const rawText = typeof adapter.extractIngredients === 'function'
       ? adapter.extractIngredients(document) : null;
 

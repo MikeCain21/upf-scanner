@@ -28,6 +28,22 @@ importScripts('../lib/browser-polyfill.js');
 
 const API_BASE_URL = 'https://world.openfoodfacts.org/api/v2/product';
 
+/** OFF category tags that indicate unprocessed fresh produce (NOVA 1 by definition). */
+const NOVA1_PRODUCE_CATEGORIES = new Set([
+  'en:produce',
+  'en:fresh-fruits',
+  'en:fruits',
+  'en:fresh-vegetables',
+  'en:vegetables',
+  'en:fresh-meat',
+  'en:meats',
+  'en:fresh-fish',
+  'en:fish-and-seafood',
+  'en:eggs',
+  'en:fresh-herbs',
+  'en:herbs',
+]);
+
 // User-Agent is required by OpenFoodFacts Terms of Service.
 const USER_AGENT = 'NOVA-Extension/1.0.0 (open-source food classification tool)';
 
@@ -401,6 +417,16 @@ async function lookupProduct(barcode) {
 
   const novaScore = extractNovaScore(product);
   if (!novaScore) {
+    const categories = product.categories_tags || product.categories || [];
+    const isFreshProduce = Array.isArray(categories) &&
+      categories.some(cat => NOVA1_PRODUCE_CATEGORIES.has(cat));
+    if (isFreshProduce) {
+      const productName = product.product_name || '';
+      const offUrl = `https://world.openfoodfacts.org/product/${barcode}`;
+      await setCached(barcode, { novaScore: 1, productName, markers: [], offUrl });
+      console.log(`[NOVA API] NOVA 1 inferred from fresh produce category for ${barcode} (${productName})`);
+      return { source: 'api', novaScore: 1, productName, markers: [], offUrl };
+    }
     console.log(`[NOVA API] Product found but no NOVA data: ${barcode}`);
     return { source: 'no_nova' };
   }
