@@ -73,8 +73,19 @@
   // Already-badged element tracking
   // ---------------------------------------------------------------------------
 
-  // WeakSet so badged DOM elements can be GC'd when removed from the page.
-  const _badged = new WeakSet();
+  // Set tracking badged DOM elements. Using Set (not WeakSet) so we can call
+  // _badged.clear() on SPA navigation when React reuses the same H1 element.
+  const _badged = new Set();
+
+  /**
+   * Removes all NOVA badge elements from the DOM and resets the badged-element
+   * tracker. Called before re-running detection on SPA navigation so that a
+   * reused H1 element (React SPA pattern) gets a fresh badge for the new product.
+   */
+  function clearBadgesOnNavigation() {
+    document.querySelectorAll('.nova-badge').forEach(b => b.remove());
+    _badged.clear();
+  }
 
   // ---------------------------------------------------------------------------
   // Adapter resolution
@@ -167,28 +178,18 @@
     // any adapter.
     const barcodes = rawBarcodes.filter(bc => !/^2/.test(String(bc)));
     const rawText = typeof adapter.extractIngredients === 'function'
-      ? adapter.extractIngredients(document) : null;
+      ? await adapter.extractIngredients(document) : null;
 
     log(`Barcodes: ${barcodes.length > 0 ? barcodes.join(', ') : 'none'} | Ingredients: ${rawText ? 'found' : 'none'}`);
 
-    // Fast path: run local classifier synchronously before any network calls.
-    // NOVA 1 (≤3 ingredients, no processing signals) is unambiguous — fresh produce
-    // needs no OFF confirmation. Only valid when no barcodes are available; when a
-    // barcode exists, OFF is authoritative and must be consulted first.
-    if (barcodes.length === 0 && rawText) {
-      const parseIngredients = window.__novaExt?.parseIngredients;
-      const classifyByIngredients = window.__novaExt?.classifyByIngredients;
-      if (typeof parseIngredients === 'function' && typeof classifyByIngredients === 'function') {
-        const ingredients = parseIngredients(rawText);
-        if (ingredients?.length > 0) {
-          const localResult = classifyByIngredients(ingredients);
-          if (localResult?.score === 1) {
-            log(`NOVA 1 from local classifier (fast path, no barcode) — skipping OFF lookup`);
-            notifyBackground(1, null, localResult.indicators || []);
-            return createBadge(1, localResult.reason, localResult.indicators || []);
-          }
-        }
-      }
+    // Fast path: NOVA 1 inferred only when there are no ingredients at all.
+    // Products with ingredient text must be classified by OFF — the local classifier
+    // lacks the ingredient-taxonomy knowledge to correctly score food-type names
+    // like "Cheddar" (NOVA 3 per OFF cheese category rule).
+    if (barcodes.length === 0 && !rawText) {
+      log('NOVA 1 inferred — no barcode, no ingredient text (fresh produce)');
+      notifyBackground(1, null, []);
+      return createBadge(1, 'No ingredients — likely unprocessed produce', []);
     }
 
     // Fire all barcode lookups in parallel — ingredient analysis also fires simultaneously.
@@ -310,7 +311,10 @@
         log(`Loading badge injected for: ${info.name}`);
         classifyMainProduct(adapter, info.productId, info.name).then(badge => {
           log(`Classification resolved — replacing loading badge (result: "${badge.textContent}")`);
-          loadingBadge.replaceWith(badge);
+          // Guard against SPA navigation that occurred while classification was
+          // in-flight: clearBadgesOnNavigation() removes loadingBadge from the DOM,
+          // so replaceWith() would throw a HierarchyRequestError without this check.
+          if (loadingBadge.isConnected) loadingBadge.replaceWith(badge);
         });
       } else {
         // Tile products: no ingredient data and no EAN barcode available.
@@ -354,12 +358,25 @@
       window.dispatchEvent(new Event('nova:urlchange'))
     );
 
+    // Track pathname so we only clear badges on real product-to-product
+    // navigation (pushState / popstate). Same-pathname replaceState calls
+    // (analytics, canonical URL normalisation) must NOT clear, otherwise the
+    // async classification resolves against a detached loadingBadge and the
+    // final badge is silently discarded.
+    let _lastPathname = location.pathname;
+
     // Debounce re-run to let Tesco's React finish rendering after navigation.
     // 150ms is sufficient for React to batch and commit a render.
     window.addEventListener(
       'nova:urlchange',
       debounce(() => {
-        log('SPA navigation detected — re-running detection');
+        const currentPathname = location.pathname;
+        if (currentPathname !== _lastPathname) {
+          log(`SPA product navigation detected (${_lastPathname} → ${currentPathname}) — clearing stale badges`);
+          clearBadgesOnNavigation();
+          _lastPathname = currentPathname;
+        }
+        log('SPA URL event — re-running detection');
         detectAndBadge(adapter);
       }, 150)
     );

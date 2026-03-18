@@ -281,6 +281,49 @@ describe('classifyByIngredients — NOVA 2 single culinary ingredient + NOVA 3 p
   it('Sauerkraut (cabbage, salt, lacto-fermented) → NOVA 3 via processing markers', () => {
     expect(classifyByIngredients(['Cabbage', 'Salt', 'Lacto-fermented']).score).toBe(3);
   });
+
+  // Cheestrings fix — the specific product that prompted ADR-021
+  it('returns NOVA 3 for acidity regulators with cheese ingredients', () => {
+    const result = classifyByIngredients([
+      'Medium Fat Hard Cheese',
+      'Added Ingredients: Acidity Regulators (Citric Acid, Lactic Acid)',
+      'Paprika', 'Vitamin D', 'Vitamin B6', 'Vitamin B12'
+    ]);
+    expect(result.score).toBe(3);
+  });
+
+  it('returns NOVA 3 for a lone acidity regulator token', () => {
+    const result = classifyByIngredients(['Acidity Regulators (Citric Acid, Lactic Acid)']);
+    expect(result.score).toBe(3);
+  });
+
+  it('returns NOVA 3 for stabiliser in ingredients', () => {
+    const result = classifyByIngredients(['Milk', 'Salt', 'Stabiliser (Carrageenan)']);
+    expect(result.score).toBe(3);
+  });
+
+  // Cheese bare-name fix — products like Cathedral City Cheddar on Ocado return only
+  // the food-type name without processing markers (cheese cultures, rennet)
+  it('classifies ["Cheddar"] as NOVA 3', () => {
+    expect(classifyByIngredients(['Cheddar']).score).toBe(3);
+  });
+
+  it('classifies ["Cheddar Cheese"] as NOVA 3', () => {
+    expect(classifyByIngredients(['Cheddar Cheese']).score).toBe(3);
+  });
+
+  it('classifies ["Cheddar Cheese", "Milk"] as NOVA 3', () => {
+    expect(classifyByIngredients(['Cheddar Cheese', 'Milk']).score).toBe(3);
+  });
+
+  it('classifies ["Goats Cheese"] as NOVA 3', () => {
+    expect(classifyByIngredients(['Goats Cheese']).score).toBe(3);
+  });
+
+  it('returns NOVA 3 for humectant in ingredients', () => {
+    const result = classifyByIngredients(['Wheat Flour', 'Sugar', 'Humectant (Glycerol)']);
+    expect(result.score).toBe(3);
+  });
 });
 
 // Regression: Tesco Pure Sunflower Oil (product 254918228) — ADR-018
