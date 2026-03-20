@@ -99,6 +99,22 @@ a.nova-badge-link:focus-visible .nova-badge {
 }
 
 
+.upf-feedback {
+  margin-top: 6px;
+  text-align: right;
+  font-size: 11px;
+}
+
+.upf-feedback a {
+  color: #aaa;
+  text-decoration: none;
+}
+
+.upf-feedback a:hover {
+  color: #fff;
+  text-decoration: underline;
+}
+
 .nova-tooltip::after {
   content: '';
   position: absolute;

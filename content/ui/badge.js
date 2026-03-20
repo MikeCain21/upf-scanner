@@ -44,6 +44,19 @@
   };
 
   // ---------------------------------------------------------------------------
+  // Feedback form constants (pre-filled Google Form for reporting wrong scores)
+  // ---------------------------------------------------------------------------
+
+  /** Base URL of the Google Form — replace FORM_ID with the real form ID after Step 0 */
+  const FEEDBACK_FORM_URL = 'https://docs.google.com/forms/d/e/FORM_ID/viewform';
+
+  /** entry.XXXXXXXXX for the "Product URL" field */
+  const FEEDBACK_ENTRY_URL = 'entry.URLFIELD';
+
+  /** entry.XXXXXXXXX for the "NOVA score shown" field */
+  const FEEDBACK_ENTRY_NOVA = 'entry.NOVAFIELD';
+
+  // ---------------------------------------------------------------------------
   // Shared tooltip singleton
   // ---------------------------------------------------------------------------
 
@@ -125,12 +138,28 @@
   }
 
   /**
+   * Builds a pre-filled Google Form URL for reporting incorrect NOVA scores.
+   * @param {string} productUrl - The current page URL
+   * @param {number} novaScore - The NOVA score the extension displayed
+   * @returns {string} Pre-filled form URL
+   */
+  function buildFeedbackUrl(productUrl, novaScore) {
+    const params = new URLSearchParams({
+      [FEEDBACK_ENTRY_URL]: productUrl,
+      [FEEDBACK_ENTRY_NOVA]: String(novaScore),
+      usp: 'pp_url',
+    });
+    return `${FEEDBACK_FORM_URL}?${params.toString()}`;
+  }
+
+  /**
    * Attaches mouseenter/mouseleave listeners that show/hide the shared tooltip.
    *
    * @param {HTMLElement} badgeEl
    * @param {string} tooltipText - Pre-built text to display
+   * @param {string} [feedbackUrl] - Optional pre-filled feedback form URL
    */
-  function _attachTooltip(badgeEl, tooltipText) {
+  function _attachTooltip(badgeEl, tooltipText, feedbackUrl) {
     // Pre-create the tooltip element so it exists on document.body from first badge creation
     getTooltip();
     badgeEl.setAttribute('aria-describedby', 'nova-tooltip');
@@ -153,6 +182,18 @@
       textNode.className = 'nova-tooltip-text';
       textNode.textContent = tooltipText;
       tooltip.appendChild(textNode);
+
+      if (feedbackUrl) {
+        const feedbackDiv = document.createElement('div');
+        feedbackDiv.className = 'upf-feedback';
+        const feedbackLink = document.createElement('a');
+        feedbackLink.href = feedbackUrl;
+        feedbackLink.target = '_blank';
+        feedbackLink.rel = 'noopener noreferrer';
+        feedbackLink.textContent = 'Report incorrect score';
+        feedbackDiv.appendChild(feedbackLink);
+        tooltip.appendChild(feedbackDiv);
+      }
 
       clearTimeout(_hideTimer);
       _showTooltip(tooltip, badgeEl);
@@ -188,7 +229,8 @@
     badge.setAttribute('aria-label', `NOVA ${novaScore} - ${NOVA_LABELS[novaScore] || 'unknown'}`);
 
     const tooltipText = _buildTooltipText(novaScore, reason, indicators);
-    _attachTooltip(badge, tooltipText);
+    const feedbackUrl = buildFeedbackUrl(window.location.href, novaScore);
+    _attachTooltip(badge, tooltipText, feedbackUrl);
 
     if (offUrl) {
       const link = document.createElement('a');
