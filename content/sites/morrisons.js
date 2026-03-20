@@ -26,7 +26,6 @@
  *   PDP URL pattern: /products/{slug}/{retailerProductId}
  *   Barcode (gtin13): ❌ not available anywhere on page
  *   Ingredient DOM: ✅ h2 + nextElementSibling inside [data-test="bop-view"]
- *   Tile selector: [data-test^="fop-wrapper:"] — grid/carousel product cards
  *
  * Extends BaseAdapter — shared utilities (_extractJsonLd, _trySelectors)
  * are inherited. Registers itself with the adapter registry.
@@ -52,16 +51,6 @@ const MORRISONS_HOSTNAME = 'groceries.morrisons.com';
 const MORRISONS_SELECTORS = {
   // Synthetics-monitored product detail panel — very stable
   BOP_VIEW: '[data-test="bop-view"]',
-
-  // Product tile wrappers on category/search pages (carousel, grid)
-  // data-test value includes product slug, e.g. "fop-wrapper:morrisons-cornflakes-500g"
-  TILE_WRAPPER: '[data-test^="fop-wrapper:"]',
-
-  // Product link inside a tile — href contains the PDP URL
-  TILE_PRODUCT_LINK: '[data-test="fop-product-link"]',
-
-  // Product title text inside a tile
-  TILE_TITLE: '[data-test="fop-title"]',
 };
 
 // ---------------------------------------------------------------------------
@@ -94,43 +83,27 @@ class MorrisonsAdapter extends BaseAdapter {
   }
 
   /**
-   * Detects all product elements on the page.
-   * Returns the main H1 (if on a PDP) plus any carousel/grid tile wrappers.
+   * Detects the main product element on a Morrisons PDP.
    *
    * @param {Document} doc
    * @returns {Element[]}
    */
   detectProducts(doc) {
-    const products = [];
     const h1 = doc.querySelector('h1');
-    if (h1) products.push(h1);
-    const tiles = [...doc.querySelectorAll(MORRISONS_SELECTORS.TILE_WRAPPER)];
-    return [...products, ...tiles];
+    return h1 ? [h1] : [];
   }
 
   /**
-   * Extracts structured product data from a product element.
-   *
-   * For the main H1, productId is parsed from the PDP URL path.
-   * For tile wrappers, productId and URL are read from the tile's product link href.
+   * Extracts structured product data from the main PDP H1 element.
    *
    * @param {Element} el - Element returned by detectProducts()
    * @returns {{ name: string, url: string, productId: string }}
    */
   extractProductInfo(el) {
-    if (el.tagName === 'H1') {
-      const href = typeof window !== 'undefined' ? window.location.href : '';
-      const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
-      const productId = pathname.match(/\/products\/[^/]+\/(\d+)/)?.[1] ?? '';
-      return { name: el.textContent.trim(), url: href, productId };
-    }
-
-    // Carousel / grid tile
-    const link = el.querySelector(MORRISONS_SELECTORS.TILE_PRODUCT_LINK);
-    const title = el.querySelector(MORRISONS_SELECTORS.TILE_TITLE);
-    const href = link?.href ?? '';
-    const productId = href.match(/\/products\/[^/]+\/(\d+)/)?.[1] ?? '';
-    return { name: title?.textContent?.trim() ?? '', url: href, productId };
+    const href = typeof window !== 'undefined' ? window.location.href : '';
+    const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
+    const productId = pathname.match(/\/products\/[^/]+\/(\d+)/)?.[1] ?? '';
+    return { name: el.textContent.trim(), url: href, productId };
   }
 
   /**

@@ -204,27 +204,8 @@ describe('detectProducts', () => {
     expect(results[0]).toBe(h1);
   });
 
-  it('returns H1 plus tiles when both are present', () => {
-    const h1 = fakeH1();
-    const tile1 = fakeTile();
-    const tile2 = fakeTile(
-      'https://groceries.morrisons.com/products/morrisons-cornflakes/113997003',
-      'Morrisons Cornflakes'
-    );
-    const doc = {
-      querySelector: (sel) => sel === 'h1' ? h1 : null,
-      querySelectorAll: (sel) =>
-        sel === '[data-test^="fop-wrapper:"]' ? [tile1, tile2] : [],
-    };
-    const results = adapter.detectProducts(doc);
-    expect(results).toHaveLength(3);
-    expect(results[0]).toBe(h1);
-    expect(results[1]).toBe(tile1);
-    expect(results[2]).toBe(tile2);
-  });
-
-  it('returns empty array when neither H1 nor tiles are present', () => {
-    const doc = { querySelector: () => null, querySelectorAll: () => [] };
+  it('returns empty array when no H1 is present', () => {
+    const doc = { querySelector: () => null };
     expect(adapter.detectProducts(doc)).toHaveLength(0);
   });
 });
@@ -251,22 +232,6 @@ describe('extractProductInfo', () => {
     );
   });
 
-  it('extracts name, url, and productId from a tile element', () => {
-    const tile = fakeTile(
-      'https://groceries.morrisons.com/products/morrisons-cheddar/103261043',
-      'Cathedral City Mature Cheddar'
-    );
-    const info = adapter.extractProductInfo(tile);
-    expect(info.name).toBe('Cathedral City Mature Cheddar');
-    expect(info.url).toBe('https://groceries.morrisons.com/products/morrisons-cheddar/103261043');
-    expect(info.productId).toBe('103261043');
-  });
-
-  it('returns empty productId for tile href with non-standard URL', () => {
-    const tile = fakeTile('https://groceries.morrisons.com/browse/deals', 'Weekly Offers');
-    const info = adapter.extractProductInfo(tile);
-    expect(info.productId).toBe('');
-  });
 });
 
 // ---------------------------------------------------------------------------

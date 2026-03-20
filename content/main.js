@@ -19,7 +19,6 @@
  *   - Wraps history.pushState/replaceState to detect SPA URL changes
  *   - MutationObserver catches products rendered after DOM settles
  *   - WeakSet prevents duplicate badges across re-runs
- *   - Tile products are skipped (Tesco IDs ≠ EAN barcodes)
  *
  * @version 0.9.0
  */
@@ -271,13 +270,9 @@
   // ---------------------------------------------------------------------------
 
   /**
-   * Detects all products and injects NOVA badges.
+   * Detects the main PDP product and injects a NOVA badge.
    *
-   * Main PDP product (H1): classified by ingredients and badged immediately.
-   * Tile products: skipped — Tesco tile IDs are not EAN barcodes so the OFF API
-   * cannot resolve them.
-   *
-   * Uses _badged WeakSet to skip elements that already have a badge, making it
+   * Uses _badged Map to skip elements that already have a badge, making it
    * safe to call on every SPA navigation and MutationObserver fire.
    *
    * @param {object} adapter
@@ -292,8 +287,6 @@
       log('No products detected — check selectors or page structure');
       return;
     }
-
-    let tilesSkipped = 0;
 
     products.forEach((el, index) => {
       // Skip elements that have already been badged on a previous run.
@@ -334,16 +327,8 @@
           // so replaceWith() would throw a HierarchyRequestError without this check.
           if (loadingBadge.isConnected) loadingBadge.replaceWith(badge);
         });
-      } else {
-        // Tile products: no ingredient data and no EAN barcode available.
-        // Skip entirely — a missing badge is better than a permanent spinner.
-        tilesSkipped++;
       }
     });
-
-    if (tilesSkipped > 0) {
-      log(`  → ${tilesSkipped} tile product(s) skipped (no EAN barcode)`);
-    }
   }
 
   // ---------------------------------------------------------------------------

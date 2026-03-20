@@ -2,7 +2,7 @@
  * Tesco Site Adapter
  *
  * Detects and extracts product information from Tesco grocery pages.
- * Handles both product detail pages (PDP) and category/listing pages.
+ * Handles product detail pages (PDPs) only.
  *
  * Selectors use stable data-* attributes where possible, since Tesco's
  * obfuscated class names (e.g. gyT8MW_*) change between site rebuilds.
@@ -31,13 +31,6 @@ const TESCO_HOSTNAME = 'tesco.com';
 const TESCO_SELECTORS = {
   // Product detail page — main product title (h1 with data-auto attribute)
   MAIN_PRODUCT_TITLE: 'h1[data-auto="pdp-product-title"]',
-
-  // Product tiles — present on both PDPs (related products) and listing pages
-  PRODUCT_TILE: '[data-product-id]',
-
-  // Title link inside a product tile (obfuscated class, may need updating)
-  // Fallback: first <a> inside the tile
-  TILE_TITLE_LINK: 'a.gyT8MW_titleLink',
 
   // Canonical URL tag — used to extract main product ID from saved pages
   CANONICAL: 'link[rel="canonical"]',
@@ -97,25 +90,14 @@ class TescoAdapter extends BaseAdapter {
   }
 
   /**
-   * Detects all product elements on the page.
-   *
-   * On product detail pages, returns [mainProductH1, ...relatedTiles].
-   * On listing/category pages, returns all product tiles.
+   * Detects the main product element on a Tesco PDP.
    *
    * @param {Document} doc - The document to inspect
-   * @returns {Element[]} Array of product elements
+   * @returns {Element[]} Array containing the main product H1, or empty array
    */
   detectProducts(doc) {
-    const products = [];
-
-    // Main product (PDP only) — the H1 with the product title
     const mainTitle = doc.querySelector(TESCO_SELECTORS.MAIN_PRODUCT_TITLE);
-    if (mainTitle) products.push(mainTitle);
-
-    // Product tiles — related products on PDP, all products on listing pages
-    doc.querySelectorAll(TESCO_SELECTORS.PRODUCT_TILE).forEach(tile => products.push(tile));
-
-    return products;
+    return mainTitle ? [mainTitle] : [];
   }
 
   /**
@@ -125,10 +107,7 @@ class TescoAdapter extends BaseAdapter {
    * @returns {{ name: string, url: string, productId: string|null }}
    */
   extractProductInfo(el) {
-    if (el.tagName === 'H1' && el.getAttribute('data-auto') === 'pdp-product-title') {
-      return this._extractMainProductInfo(el);
-    }
-    return this._extractTileInfo(el);
+    return this._extractMainProductInfo(el);
   }
 
   /**
@@ -215,23 +194,6 @@ class TescoAdapter extends BaseAdapter {
     return { name, url, productId };
   }
 
-  /**
-   * Extracts product info from a product tile element ([data-product-id]).
-   *
-   * @param {Element} el - Element with a data-product-id attribute
-   * @returns {{ name: string, url: string, productId: string|null }}
-   */
-  _extractTileInfo(el) {
-    const productId = el.getAttribute('data-product-id');
-    const titleLink =
-      el.querySelector(TESCO_SELECTORS.TILE_TITLE_LINK) || el.querySelector('a');
-    const name = titleLink ? titleLink.textContent.trim() : 'Unknown';
-    let url = titleLink?.href || '';
-    if (!url && productId) {
-      url = `${TESCO_BASE_URL}/groceries/en-GB/products/${productId}`;
-    }
-    return { name, url, productId };
-  }
 }
 
 // ---------------------------------------------------------------------------
