@@ -73,14 +73,17 @@
   // Already-badged element tracking
   // ---------------------------------------------------------------------------
 
-  // Set tracking badged DOM elements. Using Set (not WeakSet) so we can call
-  // _badged.clear() on SPA navigation when React reuses the same H1 element.
-  const _badged = new Set();
+  // Map tracking badged DOM elements: Element → productName at time of badging.
+  // Using Map (not WeakSet/Set) so we can (a) call _badged.clear() on SPA
+  // navigation and (b) detect when React re-renders a new product into the same
+  // H1 element (characterData in-place update) by comparing the stored name.
+  const _badged = new Map();
 
   /**
    * Removes all NOVA badge elements from the DOM and resets the badged-element
    * tracker. Called before re-running detection on SPA navigation so that a
    * reused H1 element (React SPA pattern) gets a fresh badge for the new product.
+   * _badged.clear() works on Map the same as Set.
    */
   function clearBadgesOnNavigation() {
     document.querySelectorAll('.nova-badge').forEach(b => b.remove());
@@ -294,14 +297,29 @@
 
     products.forEach((el, index) => {
       // Skip elements that have already been badged on a previous run.
-      if (_badged.has(el)) return;
+      // For Map entries, also check whether React re-rendered a new product
+      // into the same H1 element (characterData in-place update). el.textContent
+      // is uncontaminated by the badge because injectBadge() inserts it as a
+      // sibling (afterend), not a child.
+      if (_badged.has(el)) {
+        if (el.textContent.trim() === _badged.get(el)) return; // same product — skip
+        // Different text — new product rendered in this element. Remove stale
+        // sibling badge and fall through to re-classify.
+        const staleName = _badged.get(el);
+        log(`[SPA re-render] H1 changed: "${staleName}" → "${el.textContent.trim()}" — removing stale badge, re-classifying`);
+        if (el.nextElementSibling?.classList?.contains('nova-badge')) {
+          el.nextElementSibling.remove();
+        }
+        _badged.delete(el);
+      }
 
       const info = adapter.extractProductInfo(el);
       log(`Product ${index + 1}: ${info.name} (id: ${info.productId})`);
 
       if (isMainProduct(el, adapter)) {
         // Claim early — prevents re-entry during async resolution.
-        _badged.add(el);
+        // Store the product name so stale-detection can compare on SPA re-render.
+        _badged.set(el, info.name);
         // Show "NOVA ?" immediately so the user has feedback while async
         // classification runs; replace with the scored badge on resolve.
         const { setBadgeLoading } = window.__novaExt;
@@ -390,7 +408,9 @@
    * Watches document.body for new DOM nodes and re-runs detection when
    * new content appears (e.g. Tesco React renders product tiles after navigation).
    *
-   * The _badged WeakSet ensures already-badged elements are never duplicated.
+   * characterData: true catches React's in-place H1 text updates on SPA nav
+   * (e.g. Ocado/Morrisons "You May Also Like") which don't add/remove nodes.
+   * The _badged Map stale-detection then removes the old badge and re-classifies.
    *
    * @param {object} adapter
    */
@@ -398,7 +418,7 @@
     const observer = new MutationObserver(
       debounce(() => detectAndBadge(adapter), 150)
     );
-    observer.observe(document.body, { childList: true, subtree: true });
+    observer.observe(document.body, { childList: true, subtree: true, characterData: true });
     log('MutationObserver active');
   }
 
