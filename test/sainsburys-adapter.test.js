@@ -116,8 +116,12 @@ describe('isSupported', () => {
     expect(adapter.isSupported('https://www.sainsburys.co.uk/gol-ui/product/petit-filous-frubes-9x40g')).toBe(true);
   });
 
-  it('returns true for a Sainsbury\'s category URL', () => {
-    expect(adapter.isSupported('https://www.sainsburys.co.uk/gol-ui/groceries/dairy-eggs-chilled/yogurt')).toBe(true);
+  it('returns false for a Sainsbury\'s homepage URL', () => {
+    expect(adapter.isSupported('https://www.sainsburys.co.uk/')).toBe(false);
+  });
+
+  it('returns false for a Sainsbury\'s category URL', () => {
+    expect(adapter.isSupported('https://www.sainsburys.co.uk/gol-ui/groceries/dairy-eggs-chilled/yogurt')).toBe(false);
   });
 
   it('returns false for a Tesco URL', () => {

@@ -80,7 +80,9 @@ class TescoAdapter extends BaseAdapter {
    * @returns {boolean}
    */
   isSupported(url) {
-    return url.includes(TESCO_HOSTNAME);
+    return typeof url === 'string' &&
+      url.includes(TESCO_HOSTNAME) &&
+      TESCO_PRODUCT_URL_PATTERN.test(url);
   }
 
   /**

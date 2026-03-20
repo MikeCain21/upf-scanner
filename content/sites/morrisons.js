@@ -78,7 +78,9 @@ class MorrisonsAdapter extends BaseAdapter {
    * @returns {boolean}
    */
   isSupported(url) {
-    return typeof url === 'string' && url.includes(MORRISONS_HOSTNAME);
+    return typeof url === 'string' &&
+      url.includes(MORRISONS_HOSTNAME) &&
+      url.includes('/products/');
   }
 
   /**

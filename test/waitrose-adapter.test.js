@@ -117,8 +117,12 @@ describe('isSupported', () => {
     expect(adapter.isSupported('https://www.waitrose.com/ecom/products/fanta/006393-2859-2860')).toBe(true);
   });
 
-  it('returns true for a Waitrose category listing URL', () => {
-    expect(adapter.isSupported('https://www.waitrose.com/ecom/groceries/fruit-veg')).toBe(true);
+  it('returns false for a Waitrose homepage URL', () => {
+    expect(adapter.isSupported('https://www.waitrose.com/')).toBe(false);
+  });
+
+  it('returns false for a Waitrose category listing URL', () => {
+    expect(adapter.isSupported('https://www.waitrose.com/ecom/groceries/fruit-veg')).toBe(false);
   });
 
   it('returns false for a Tesco URL', () => {

@@ -152,10 +152,14 @@ describe('isSupported', () => {
     )).toBe(true);
   });
 
-  it('returns true for a Morrisons category URL', () => {
+  it('returns false for a Morrisons homepage URL', () => {
+    expect(adapter.isSupported('https://groceries.morrisons.com/')).toBe(false);
+  });
+
+  it('returns false for a Morrisons category URL', () => {
     expect(adapter.isSupported(
       'https://groceries.morrisons.com/browse/fresh-food-and-chilled/yoghurts'
-    )).toBe(true);
+    )).toBe(false);
   });
 
   it('returns false for a Tesco URL', () => {

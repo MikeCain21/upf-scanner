@@ -127,8 +127,12 @@ describe('isSupported', () => {
     expect(adapter.isSupported('https://www.asda.com/groceries/product/regular-cola/coca-cola-original-taste-1-75l/7387625')).toBe(true);
   });
 
-  it('returns true for an ASDA groceries category URL', () => {
-    expect(adapter.isSupported('https://www.asda.com/groceries/fruit-veg')).toBe(true);
+  it('returns false for an ASDA homepage URL', () => {
+    expect(adapter.isSupported('https://www.asda.com/')).toBe(false);
+  });
+
+  it('returns false for an ASDA groceries category URL', () => {
+    expect(adapter.isSupported('https://www.asda.com/groceries/fruit-veg')).toBe(false);
   });
 
   it('returns false for a Tesco URL', () => {

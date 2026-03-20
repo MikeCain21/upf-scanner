@@ -70,7 +70,9 @@ class WaitroseAdapter extends BaseAdapter {
    * @returns {boolean}
    */
   isSupported(url) {
-    return url.includes(WAITROSE_HOSTNAME);
+    return typeof url === 'string' &&
+      url.includes(WAITROSE_HOSTNAME) &&
+      url.includes('/ecom/products/');
   }
 
   /**
