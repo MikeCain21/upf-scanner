@@ -1,5 +1,5 @@
 /**
- * NOVA Extension - BaseAdapter
+ * UPF Scanner - BaseAdapter
  *
  * Defines the contract every site adapter must implement and provides
  * shared utilities used across all adapters.

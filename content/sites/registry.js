@@ -1,5 +1,5 @@
 /**
- * NOVA Extension - Adapter Registry
+ * UPF Scanner - Adapter Registry
  *
  * Maintains the list of registered site adapters and resolves which adapter
  * should handle a given URL.

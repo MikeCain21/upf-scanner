@@ -1,5 +1,5 @@
 /**
- * NOVA Extension - Badge Component
+ * UPF Scanner - Badge Component
  *
  * Creates and manages NOVA classification badge DOM elements.
  * Handles all badge states: scored (NOVA 1–4), loading, and error.

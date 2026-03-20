@@ -1,5 +1,5 @@
 /**
- * NOVA Extension - Background Service Worker
+ * UPF Scanner - Background Service Worker
  *
  * Handles OpenFoodFacts API lookups, caching, and message passing with
  * content scripts. Runs as a Manifest V3 service worker.

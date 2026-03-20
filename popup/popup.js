@@ -1,5 +1,5 @@
 /**
- * NOVA Extension - Popup Script
+ * UPF Scanner - Popup Script
  *
  * Requests the current page's NOVA state from the background service worker,
  * renders the product score section when a product has been classified, and

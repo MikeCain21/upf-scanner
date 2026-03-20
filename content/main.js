@@ -1,5 +1,5 @@
 /**
- * NOVA Extension - Main Content Script
+ * UPF Scanner - Main Content Script
  *
  * Orchestrates product detection, ingredient extraction, classification,
  * and badge display on supported supermarket pages.
@@ -44,9 +44,9 @@
   function log(message, data) {
     if (!CONFIG.DEBUG) return;
     if (data !== undefined) {
-      console.log(`[NOVA Extension] ${message}`, data);
+      console.log(`[UPF Scanner] ${message}`, data);
     } else {
-      console.log(`[NOVA Extension] ${message}`);
+      console.log(`[UPF Scanner] ${message}`);
     }
   }
 
@@ -162,7 +162,7 @@
         productName: productName || null,
         barcode: barcode || null,
         markers,
-      }).catch(() => {}); // ignore — background may be inactive
+      }).catch(() => { }); // ignore — background may be inactive
     };
 
     // Validates offUrl is a safe OpenFoodFacts product URL
@@ -191,30 +191,30 @@
     if (barcodes.length === 0 && !rawText) {
       log('NOVA 1 inferred — no barcode, no ingredient text (fresh produce)');
       notifyBackground(1, null, []);
-      return createBadge(1, 'No ingredients — likely unprocessed produce', []);
+      return createBadge(1, 'No ingredients detected — likely unprocessed produce', []);
     }
 
     // Fire all barcode lookups in parallel — ingredient analysis also fires simultaneously.
     // Promise.any resolves with the first result that carries a valid NOVA score.
     const barcodePromise = barcodes.length > 0
       ? Promise.any(
-          barcodes.map(bc =>
-            browser.runtime.sendMessage({ type: 'FETCH_PRODUCT', barcode: bc })
-              .then(result => {
-                if (result?.success && isValidScore(result.novaScore)) return { result, barcode: bc };
-                return Promise.reject(new Error('no score'));
-              })
-              .catch(err => Promise.reject(err))
-          )
-        ).catch(() => null)
+        barcodes.map(bc =>
+          browser.runtime.sendMessage({ type: 'FETCH_PRODUCT', barcode: bc })
+            .then(result => {
+              if (result?.success && isValidScore(result.novaScore)) return { result, barcode: bc };
+              return Promise.reject(new Error('no score'));
+            })
+            .catch(err => Promise.reject(err))
+        )
+      ).catch(() => null)
       : Promise.resolve(null);
 
     const ingredientPromise = rawText
       ? browser.runtime.sendMessage({
-          type: 'ANALYZE_INGREDIENTS',
-          ingredientsText: rawText,
-          productId,
-        }).catch(() => null)
+        type: 'ANALYZE_INGREDIENTS',
+        ingredientsText: rawText,
+        productId,
+      }).catch(() => null)
       : Promise.resolve(null);
 
     // 1. Barcode result (priority — OpenFoodFacts product data is most authoritative)

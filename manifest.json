@@ -3,7 +3,7 @@
   "name": "UPF Scanner \u2013 Spot Ultra-Processed Food",
   "version": "1.2.1",
   "description": "Identify ultra-processed foods on UK supermarket websites using NOVA classification",
-  "author": "NOVA Extension Contributors",
+  "author": "UPF Scanner Contributors",
   "icons": {
     "16": "icons/icon16.png",
     "32": "icons/icon32.png",

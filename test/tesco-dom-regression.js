@@ -1,5 +1,5 @@
 /**
- * NOVA Extension — Tesco PDP DOM Regression Test
+ * UPF Scanner — Tesco PDP DOM Regression Test
  *
  * HOW TO USE:
  *   1. Open any Tesco product detail page (e.g. sunflower oil, bread, cheddar)
@@ -55,7 +55,7 @@
   const primaryText      = document.querySelector(SELECTORS.PRIMARY)?.textContent?.trim() ?? '';
   const f1Text           = document.querySelector(SELECTORS.F1)?.textContent?.trim() ?? '';
 
-  console.group('%cNOVA Extension — Tesco DOM Regression Check', 'font-weight:bold;font-size:14px');
+  console.group('%cUPF Scanner — Tesco DOM Regression Check', 'font-weight:bold;font-size:14px');
   console.log('Page:', window.location.href);
   console.log(
     '#accordion-panel-product-description present:',

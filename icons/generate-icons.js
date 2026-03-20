@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * generate-icons.js
- * Converts SVG source files to PNG icons for the NOVA Extension.
+ * Converts SVG source files to PNG icons for the UPF Scanner.
  *
  * Usage: node icons/generate-icons.js
  * Requires: sharp (npm install --save-dev sharp)
@@ -38,7 +38,7 @@ async function generateBanner() {
 }
 
 async function main() {
-  console.log('Generating NOVA Extension icons...\n');
+  console.log('Generating UPF Scanner icons...\n');
   await generateIcons();
   await generateBanner();
   console.log('\nDone.');
