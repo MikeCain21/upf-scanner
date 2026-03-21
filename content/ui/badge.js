@@ -48,13 +48,13 @@
   // ---------------------------------------------------------------------------
 
   /** Base URL of the Google Form — replace FORM_ID with the real form ID after Step 0 */
-  const FEEDBACK_FORM_URL = 'https://docs.google.com/forms/d/e/FORM_ID/viewform';
+  const FEEDBACK_FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSfLyPGeoQGEb3Z65Nbl46pGXPBHTbrqsugNbiQXe8kHbaxemg/viewform?usp=dialog';
 
   /** entry.XXXXXXXXX for the "Product URL" field */
-  const FEEDBACK_ENTRY_URL = 'entry.URLFIELD';
+  const FEEDBACK_ENTRY_URL = 'entry.1319413182D';
 
   /** entry.XXXXXXXXX for the "NOVA score shown" field */
-  const FEEDBACK_ENTRY_NOVA = 'entry.NOVAFIELD';
+  const FEEDBACK_ENTRY_NOVA = 'entry.1876766900';
 
   // ---------------------------------------------------------------------------
   // Shared tooltip singleton
