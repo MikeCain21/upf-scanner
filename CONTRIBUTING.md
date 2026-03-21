@@ -10,7 +10,7 @@ Thank you for your interest in contributing! This document explains how to get s
 git clone https://github.com/MikeCain21/upf-scanner.git
 cd upf-scanner
 npm install
-npm test        # Run all 320 unit tests
+npm test        # Run all 346 unit tests
 ```
 
 Load the extension in Chrome:

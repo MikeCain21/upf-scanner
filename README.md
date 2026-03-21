@@ -231,7 +231,7 @@ upf-scanner/
 
 **Running Tests:**
 ```bash
-npm test            # All unit tests (470 tests)
+npm test            # All unit tests (346 tests)
 npm run test:watch  # Watch mode
 ```
 
