@@ -7,6 +7,23 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [Unreleased]
+
+### Added
+- ESLint (`eslint:recommended` + `no-var`) with CI enforcement — `npm run lint`
+- Unit tests for Ocado adapter (`test/unit/ocado-adapter.test.js`) — 346 tests total
+- `DEBUG` flag in service worker — verbose logging is now opt-in (set `DEBUG = true` to re-enable)
+
+### Changed
+- Test directory reorganised into `unit/`, `connectivity/`, and `manual/` subdirectories
+- Icon generation script moved from `icons/` to `scripts/`
+- LICENSE updated to reflect current project name (UPF Scanner)
+
+### Fixed
+- Duplicate JSDoc block removed from `popup/popup.js`
+
+---
+
 ## [1.2.1] — 2026-03-18
 
 ### Changed
