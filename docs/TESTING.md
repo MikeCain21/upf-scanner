@@ -15,9 +15,9 @@ npm test
 
 Expected output:
 ```
-PASS test/ingredient-parser.test.js
-PASS test/nova-classifier.test.js
-PASS test/nova-indicators.test.js
+PASS test/unit/ingredient-parser.test.js
+PASS test/unit/nova-classifier.test.js
+PASS test/unit/nova-indicators.test.js
 ...
 
 Tests: 385+ passed
@@ -39,11 +39,11 @@ npm run test:verbose   # Shows every individual test name
 | Type | Command / Tool | What it covers | Requires browser? |
 |------|---------------|----------------|-------------------|
 | **Unit tests** | `npm test` | Logic in `lib/` (parser, classifier) | No — runs in Node.js |
-| **Browser integration** | `test/test-integration.html` (open directly in Chrome) | Full pipeline: detect → parse → classify → badge | Yes |
+| **Browser integration** | `test/manual/test-integration.html` (open directly in Chrome) | Full pipeline: detect → parse → classify → badge | Yes |
 | **Manual extension test** | Load unpacked in Chrome | Full end-to-end, live Tesco page | Yes |
 
 Use unit tests as the primary check for any code in `lib/`. They run instantly and require no browser.
-Use browser integration tests (`test/test-integration.html`) when you change `content/sites/tesco.js` or any lib file.
+Use browser integration tests (`test/manual/test-integration.html`) when you change `content/sites/tesco.js` or any lib file.
 Use manual extension testing for final verification before marking a phase complete.
 
 ---
@@ -110,17 +110,17 @@ Use manual extension testing for final verification before marking a phase compl
 **Purpose:** Test logic code in `lib/` without a browser. Instant feedback (~0.5s).
 
 **Test files:**
-- `test/ingredient-parser.test.js` — unit tests for `lib/ingredient-parser.js`
-- `test/nova-classifier.test.js` — unit tests for `lib/nova-classifier.js`
-- `test/nova-indicators.test.js` — unit tests for `lib/nova-indicators.js`
-- `test/openfoodfacts.test.js` — unit tests for `lib/openfoodfacts.js`
-- `test/base-adapter.test.js` — unit tests for `content/sites/base-adapter.js`
-- `test/registry.test.js` — unit tests for `content/sites/registry.js`
-- `test/sainsburys-adapter.test.js` — unit tests for Sainsbury's adapter
-- `test/asda-adapter.test.js` — unit tests for ASDA adapter
-- `test/morrisons-adapter.test.js` — unit tests for Morrisons adapter
-- `test/waitrose-adapter.test.js` — unit tests for Waitrose adapter
-- `test/openfoodfacts-connectivity.test.js` — live connectivity tests (requires network)
+- `test/unit/ingredient-parser.test.js` — unit tests for `lib/ingredient-parser.js`
+- `test/unit/nova-classifier.test.js` — unit tests for `lib/nova-classifier.js`
+- `test/unit/nova-indicators.test.js` — unit tests for `lib/nova-indicators.js`
+- `test/unit/openfoodfacts.test.js` — unit tests for `lib/openfoodfacts.js`
+- `test/unit/base-adapter.test.js` — unit tests for `content/sites/base-adapter.js`
+- `test/unit/registry.test.js` — unit tests for `content/sites/registry.js`
+- `test/unit/sainsburys-adapter.test.js` — unit tests for Sainsbury's adapter
+- `test/unit/asda-adapter.test.js` — unit tests for ASDA adapter
+- `test/unit/morrisons-adapter.test.js` — unit tests for Morrisons adapter
+- `test/unit/waitrose-adapter.test.js` — unit tests for Waitrose adapter
+- `test/connectivity/openfoodfacts-connectivity.test.js` — live connectivity tests (requires network)
 
 **Commands:**
 ```bash
@@ -130,7 +130,7 @@ npm run test:verbose  # Show every individual test name
 ```
 
 **When to use:**
-For any code in `lib/` that has no DOM or browser dependencies, write a Jest test in `test/*.test.js` and run `npm test` as the primary verification step. Jest is the authoritative test for parser logic — if it passes here, the logic is correct.
+For any code in `lib/` that has no DOM or browser dependencies, write a Jest test in `test/unit/*.test.js` and run `npm test` as the primary verification step. Jest is the authoritative test for parser logic — if it passes here, the logic is correct.
 
 ---
 
@@ -198,18 +198,18 @@ For any code in `lib/` that has no DOM or browser dependencies, write a Jest tes
 
 ---
 
-### 5. Browser Integration Harnesses (`test/test-phase*.html`)
+### 5. Browser Integration Harnesses (`test/manual/`)
 
 **Purpose:** Test DOM extraction code (Tesco adapter) against saved HTML pages in a real browser. Required because Jest has no DOM.
 
 **How to Use:**
-1. Open `test/test-integration.html` directly in Chrome (no server needed)
+1. Open `test/manual/test-integration.html` directly in Chrome (no server needed)
 2. A pass/fail table appears — all rows should be green
 3. Check console for details if a row is red
 
 **Files:**
-- `test/test-integration.html` — Full pipeline harness (detect → parse → classify → badge)
-- `test/test-runner.html` — General test runner harness
+- `test/manual/test-integration.html` — Full pipeline harness (detect → parse → classify → badge)
+- `test/manual/test-runner.html` — General test runner harness
 
 **Benefits:**
 - Repeatable tests (same HTML every time)

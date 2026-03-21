@@ -132,8 +132,8 @@ npm test
 ```
 You should see output like this:
 ```
-PASS test/nova-classifier.test.js
-PASS test/nova-indicators.test.js
+PASS test/unit/nova-classifier.test.js
+PASS test/unit/nova-indicators.test.js
 ...
 
 Tests:   X passed, X total
@@ -157,16 +157,16 @@ Runs all tests and prints the result. Use this to check everything is working be
 
 **Example output (all passing):**
 ```
-PASS test/nova-classifier.test.js
-PASS test/nova-indicators.test.js
-PASS test/openfoodfacts.test.js
-PASS test/ingredient-parser.test.js
-PASS test/base-adapter.test.js
-PASS test/registry.test.js
-PASS test/sainsburys-adapter.test.js
-PASS test/asda-adapter.test.js
-PASS test/waitrose-adapter.test.js
-PASS test/morrisons-adapter.test.js
+PASS test/unit/nova-classifier.test.js
+PASS test/unit/nova-indicators.test.js
+PASS test/unit/openfoodfacts.test.js
+PASS test/unit/ingredient-parser.test.js
+PASS test/unit/base-adapter.test.js
+PASS test/unit/registry.test.js
+PASS test/unit/sainsburys-adapter.test.js
+PASS test/unit/asda-adapter.test.js
+PASS test/unit/waitrose-adapter.test.js
+PASS test/unit/morrisons-adapter.test.js
 
 Tests:   X passed, X total
 Time: ~0.4s
@@ -311,15 +311,15 @@ The day-to-day loop for working on this project:
 6. Repeat
 ```
 
-**For logic code in `lib/`:** write or update the corresponding test in `test/` first, then implement.
+**For logic code in `lib/`:** write or update the corresponding test in `test/unit/` first, then implement.
 
-**For DOM extraction code in `content/`:** the Jest tests do not cover DOM code (no browser in Jest). Test by loading the extension in Chrome and verifying against a live Tesco page. For badge rendering, use `test/badge-display.html` (open directly in Chrome, no server needed).
+**For DOM extraction code in `content/`:** the Jest tests do not cover DOM code (no browser in Jest). Test by loading the extension in Chrome and verifying against a live Tesco page. For badge rendering, use `test/manual/badge-display.html` (open directly in Chrome, no server needed).
 
 **Committing changes:**
 
 Before committing, always run `npm test` and make sure all tests pass. Then:
 ```
-git add lib/nova-classifier.js test/nova-classifier.test.js
+git add lib/nova-classifier.js test/unit/nova-classifier.test.js
 git commit -m "Your description of what changed"
 ```
 
@@ -365,19 +365,24 @@ upf-scanner/
 ├── icons/                     Extension icons (16×16, 32×32, 48×48, 128×128)
 │
 ├── test/
-│   ├── nova-classifier.test.js        Jest: NOVA classification logic
-│   ├── nova-indicators.test.js        Jest: ultra-processed indicator detection
-│   ├── openfoodfacts.test.js          Jest: OFF API client
-│   ├── ingredient-parser.test.js      Jest: ingredient string tokenisation
-│   ├── base-adapter.test.js           Jest: shared adapter base class
-│   ├── registry.test.js               Jest: adapter registry
-│   ├── sainsburys-adapter.test.js     Jest: Sainsbury's adapter
-│   ├── asda-adapter.test.js           Jest: Asda adapter
-│   ├── waitrose-adapter.test.js       Jest: Waitrose adapter
-│   ├── morrisons-adapter.test.js      Jest: Morrisons adapter
-│   ├── openfoodfacts-connectivity.test.js  Live OFF API connectivity tests (npm run test:connectivity)
-│   ├── tesco-dom-regression.js        DOM regression check (run manually in Chrome)
-│   └── badge-display.html             Browser harness: badge rendering and tooltip behaviour
+│   ├── unit/                          Jest unit tests (run via npm test)
+│   │   ├── nova-classifier.test.js
+│   │   ├── nova-indicators.test.js
+│   │   ├── openfoodfacts.test.js
+│   │   ├── ingredient-parser.test.js
+│   │   ├── base-adapter.test.js
+│   │   ├── registry.test.js
+│   │   ├── sainsburys-adapter.test.js
+│   │   ├── asda-adapter.test.js
+│   │   ├── waitrose-adapter.test.js
+│   │   └── morrisons-adapter.test.js
+│   ├── connectivity/                  Live API tests (npm run test:connectivity)
+│   │   └── openfoodfacts-connectivity.test.js
+│   └── manual/                        Browser-only tools (open in Chrome, not npm test)
+│       ├── tesco-dom-regression.js    Paste into DevTools console
+│       ├── badge-display.html         Badge rendering harness
+│       ├── test-integration.html      Full pipeline harness
+│       └── test-runner.html           General test runner
 │
 └── docs/
     ├── PROJECT_PLAN.md        10-phase implementation roadmap

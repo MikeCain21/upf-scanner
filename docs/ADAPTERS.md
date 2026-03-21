@@ -368,9 +368,9 @@ The site's origin must also be present in `host_permissions` (already added for 
 
 ## Step 4: Write Unit Tests
 
-**File:** `test/{site}-adapter.test.js`
+**File:** `test/unit/{site}-adapter.test.js`
 
-Minimum **15 tests** per adapter. Use `test/tesco.test.js` as the reference.
+Minimum **15 tests** per adapter. Use `test/unit/asda-adapter.test.js` as the reference.
 
 ### Required test categories
 
@@ -455,7 +455,7 @@ test('returns null when no ingredient panel found', () => {
 
 ### Test helper pattern
 
-Use the same `buildDoc` helper as in `test/tesco.test.js`:
+Use the same `buildDoc` helper as in `test/unit/asda-adapter.test.js`:
 
 ```javascript
 const { JSDOM } = require('jsdom');
@@ -472,7 +472,7 @@ function buildDoc(bodyHtml) {
 
 ```bash
 npm test                    # all tests
-npx jest test/waitrose      # new adapter only
+npx jest test/unit/waitrose      # new adapter only
 ```
 
 All tests must pass before the adapter is considered complete.
