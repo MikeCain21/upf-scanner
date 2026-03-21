@@ -66,13 +66,3 @@ describe('Known NOVA 4 products', () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// Known NOVA 1 products (fresh produce)
-// ---------------------------------------------------------------------------
-
-describe('Known NOVA 1 products', () => {
-  // TODO: add a verified fresh banana barcode here.
-  // Verify first: https://world.openfoodfacts.org/api/v2/product/{barcode}.json
-  // Must return status:1 and nova_group:1 before adding.
-  it.todo('banana barcode → NOVA 1 (add verified barcode)');
-});
