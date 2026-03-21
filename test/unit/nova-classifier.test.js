@@ -12,7 +12,7 @@
  *            npm run test:verbose
  */
 
-const { classifyByIngredients } = require('../lib/nova-classifier');
+const { classifyByIngredients } = require('../../lib/nova-classifier');
 
 // ---------------------------------------------------------------------------
 // Edge cases

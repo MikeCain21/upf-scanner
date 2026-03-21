@@ -10,7 +10,7 @@
 
 // registry.js imports base-adapter.js implicitly via window assignment in the
 // browser, but in Node/Jest we only need the registry object itself.
-const { registry: _registry } = require('../content/sites/registry');
+const { registry: _registry } = require('../../content/sites/registry');
 
 // ---------------------------------------------------------------------------
 // Helper — creates a fresh registry instance for each test so registrations
@@ -20,7 +20,7 @@ const { registry: _registry } = require('../content/sites/registry');
 function makeRegistry() {
   let reg;
   jest.isolateModules(() => {
-    reg = require('../content/sites/registry').registry;
+    reg = require('../../content/sites/registry').registry;
   });
   return reg;
 }

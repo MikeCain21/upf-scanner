@@ -20,10 +20,10 @@
 // Bootstrap — make BaseAdapter available as a global so asda.js can extend it
 // ---------------------------------------------------------------------------
 
-const { BaseAdapter } = require('../content/sites/base-adapter');
+const { BaseAdapter } = require('../../content/sites/base-adapter');
 global.BaseAdapter = BaseAdapter;
 
-const { AsdaAdapter } = require('../content/sites/asda');
+const { AsdaAdapter } = require('../../content/sites/asda');
 
 // ---------------------------------------------------------------------------
 // Helpers — build minimal fake documents for testing

@@ -11,7 +11,7 @@
  *            npm run test:watch     (re-runs on file save)
  */
 
-const { parseIngredients } = require('../lib/ingredient-parser');
+const { parseIngredients } = require('../../lib/ingredient-parser');
 
 // ---------------------------------------------------------------------------
 // Edge cases — null / empty input

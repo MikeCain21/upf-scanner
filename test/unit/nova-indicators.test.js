@@ -11,7 +11,7 @@
  *            npm run test:watch     (re-runs on file save)
  */
 
-const { detectIndicators } = require('../lib/nova-indicators');
+const { detectIndicators } = require('../../lib/nova-indicators');
 
 // ---------------------------------------------------------------------------
 // Edge cases

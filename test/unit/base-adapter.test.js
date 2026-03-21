@@ -9,7 +9,7 @@
  * Run with: npm test
  */
 
-const { BaseAdapter } = require('../content/sites/base-adapter');
+const { BaseAdapter } = require('../../content/sites/base-adapter');
 
 // ---------------------------------------------------------------------------
 // Test double — a concrete subclass for testing the base utility methods

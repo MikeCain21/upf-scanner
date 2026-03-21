@@ -18,10 +18,10 @@
 // Bootstrap — make BaseAdapter available as a global so morrisons.js can extend it
 // ---------------------------------------------------------------------------
 
-const { BaseAdapter } = require('../content/sites/base-adapter');
+const { BaseAdapter } = require('../../content/sites/base-adapter');
 global.BaseAdapter = BaseAdapter;
 
-const { MorrisonsAdapter } = require('../content/sites/morrisons');
+const { MorrisonsAdapter } = require('../../content/sites/morrisons');
 
 // ---------------------------------------------------------------------------
 // Helpers — build minimal fake documents for testing

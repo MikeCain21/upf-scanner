@@ -10,7 +10,7 @@
  *            npm run test:verbose
  */
 
-const { extractNovaScore, parseApiResponse, extractNovaMarkers } = require('../lib/openfoodfacts');
+const { extractNovaScore, parseApiResponse, extractNovaMarkers } = require('../../lib/openfoodfacts');
 
 // ---------------------------------------------------------------------------
 // extractNovaScore

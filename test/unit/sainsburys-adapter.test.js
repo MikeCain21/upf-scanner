@@ -18,10 +18,10 @@
 // Bootstrap — make BaseAdapter available as a global so sainsburys.js can extend it
 // ---------------------------------------------------------------------------
 
-const { BaseAdapter } = require('../content/sites/base-adapter');
+const { BaseAdapter } = require('../../content/sites/base-adapter');
 global.BaseAdapter = BaseAdapter;
 
-const { SainsburysAdapter } = require('../content/sites/sainsburys');
+const { SainsburysAdapter } = require('../../content/sites/sainsburys');
 
 // ---------------------------------------------------------------------------
 // Helpers — build minimal fake documents for testing

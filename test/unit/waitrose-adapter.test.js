@@ -20,10 +20,10 @@
 // Bootstrap — make BaseAdapter available as a global so waitrose.js can extend it
 // ---------------------------------------------------------------------------
 
-const { BaseAdapter } = require('../content/sites/base-adapter');
+const { BaseAdapter } = require('../../content/sites/base-adapter');
 global.BaseAdapter = BaseAdapter;
 
-const { WaitroseAdapter } = require('../content/sites/waitrose');
+const { WaitroseAdapter } = require('../../content/sites/waitrose');
 
 // ---------------------------------------------------------------------------
 // Helpers — build minimal fake documents for testing
