@@ -1,0 +1,29 @@
+{
+  "env": {
+    "browser": true,
+    "es2022": true
+  },
+  "globals": {
+    "chrome": "readonly",
+    "browser": "readonly",
+    "importScripts": "readonly"
+  },
+  "extends": ["eslint:recommended"],
+  "rules": {
+    "no-var": "error"
+  },
+  "overrides": [
+    {
+      "files": ["lib/*.js", "content/sites/*.js"],
+      "env": {
+        "commonjs": true
+      }
+    }
+  ],
+  "ignorePatterns": [
+    "lib/browser-polyfill.js",
+    "node_modules/",
+    "scripts/",
+    "test/"
+  ]
+}
