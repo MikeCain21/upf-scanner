@@ -3,7 +3,11 @@
 **Last Updated:** 2026-03-21
 **Version:** 1.2.1
 
-> **Purpose:** This is the PRIMARY reference document for Claude when developing the UPF Scanner across multiple sessions. Read this file at the start of EVERY session before reviewing other documents.
+> **About this file:** This project uses [Claude Code](https://claude.ai/claude-code) for AI-assisted development. This file is the primary instruction document that Claude reads at the start of every session to understand the project's architecture, principles, and conventions. It is intentionally committed to the repo for transparency.
+>
+> **For human contributors:** See [CONTRIBUTING.md](CONTRIBUTING.md) and [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) instead.
+>
+> **Note:** References to `docs/PROGRESS.md` and `docs/PROJECT_PLAN.md` below are maintained privately by the maintainer and are not part of the public repository.
 
 ---
 
