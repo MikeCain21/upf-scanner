@@ -90,7 +90,7 @@ Before marking ANY phase ✅, open a real supermarket PDP and verify the new beh
 - Run `chrome-nova` in terminal → Chrome opens with UPF Scanner loaded
 - Open Claude Code in the upf-scanner directory → Chrome DevTools MCP connects to port 9222 automatically
 - Verify the specific feature introduced in that phase on a real supermarket product page
-- Run `test/tesco-dom-regression.js` (DOM regression) as part of every end-of-session checklist
+- Run `test/manual/tesco-dom-regression.js` (DOM regression) as part of every end-of-session checklist
 
 ### API Spike Rule
 
@@ -183,19 +183,22 @@ const name = product.name; // Get product name
 
 ### Test Files Location
 
-- `test/nova-classifier.test.js`          - Jest unit tests for `lib/nova-classifier.js`
-- `test/nova-indicators.test.js`          - Jest unit tests for `lib/nova-indicators.js`
-- `test/openfoodfacts.test.js`            - Jest unit tests for `lib/openfoodfacts.js`
-- `test/ingredient-parser.test.js`        - Jest unit tests for `lib/ingredient-parser.js`
-- `test/base-adapter.test.js`             - Jest unit tests for `content/sites/base-adapter.js`
-- `test/registry.test.js`                 - Jest unit tests for `content/sites/registry.js`
-- `test/tesco-dom-regression.js`          - DOM regression check (run after Tesco selector changes)
-- `test/sainsburys-adapter.test.js`       - Jest unit tests for Sainsbury's adapter
-- `test/asda-adapter.test.js`             - Jest unit tests for ASDA adapter
-- `test/morrisons-adapter.test.js`        - Jest unit tests for Morrisons adapter
-- `test/waitrose-adapter.test.js`         - Jest unit tests for Waitrose adapter
-- `test/openfoodfacts-connectivity.test.js` - Live connectivity tests for OFF API
-- `test/pages/`                           - Saved HTML pages (used for DOM regression checks)
+- `test/unit/nova-classifier.test.js`          - Jest unit tests for `lib/nova-classifier.js`
+- `test/unit/nova-indicators.test.js`          - Jest unit tests for `lib/nova-indicators.js`
+- `test/unit/openfoodfacts.test.js`            - Jest unit tests for `lib/openfoodfacts.js`
+- `test/unit/ingredient-parser.test.js`        - Jest unit tests for `lib/ingredient-parser.js`
+- `test/unit/base-adapter.test.js`             - Jest unit tests for `content/sites/base-adapter.js`
+- `test/unit/registry.test.js`                 - Jest unit tests for `content/sites/registry.js`
+- `test/unit/sainsburys-adapter.test.js`       - Jest unit tests for Sainsbury's adapter
+- `test/unit/asda-adapter.test.js`             - Jest unit tests for ASDA adapter
+- `test/unit/morrisons-adapter.test.js`        - Jest unit tests for Morrisons adapter
+- `test/unit/waitrose-adapter.test.js`         - Jest unit tests for Waitrose adapter
+- `test/connectivity/openfoodfacts-connectivity.test.js` - Live connectivity tests for OFF API
+- `test/manual/tesco-dom-regression.js`        - DOM regression check (run after Tesco selector changes)
+- `test/manual/badge-display.html`             - Badge rendering harness (open in browser)
+- `test/manual/test-integration.html`          - Integration test harness (open in browser)
+- `test/manual/test-runner.html`               - Test runner harness (open in browser)
+- `test/pages/`                                - Saved HTML pages (used for DOM regression checks)
 
 ### When Tests Fail
 
@@ -326,7 +329,7 @@ After user responds, add an ADR to `docs/DECISIONS.md`:
 1. ✅ **Complete current task** - don't leave half-done work
 2. ✅ **Run all tests** (`npm test` — all tests must be green)
 3. ✅ **Remove any dead code** introduced this session (grep for newly added but uncalled functions)
-4. ✅ **Run DOM regression check** (`test/tesco-dom-regression.js`) to catch selector drift
+4. ✅ **Run DOM regression check** (`test/manual/tesco-dom-regression.js`) to catch selector drift
 5. ✅ **Update `docs/PROGRESS.md`** with:
    - What was accomplished
    - Test results
@@ -375,7 +378,7 @@ Phase 3: Ingredient extraction - Handle nested ingredients
 
 **Action:**
 1. Check the relevant adapter in `content/sites/` — verify DOM selectors are still valid
-2. Run DOM regression check (`test/tesco-dom-regression.js`) if applicable (Tesco-specific)
+2. Run DOM regression check (`test/manual/tesco-dom-regression.js`) if applicable (Tesco-specific)
 3. Inspect the live page or a freshly saved HTML file to identify the new structure
 4. Update selectors in the adapter and re-test
 5. Document selector change in `docs/PROGRESS.md` and add ADR if the approach changed
@@ -385,7 +388,7 @@ Phase 3: Ingredient extraction - Handle nested ingredients
 - Ingredient text: `#accordion-panel-ingredients-panel` → find `<h3>Ingredients</h3>` → `nextElementSibling` + fallback chain
 - Barcode: `script[type="application/ld+json"]` → `@graph` → Product → `gtin13` field
 
-Run `test/tesco-dom-regression.js` after any Tesco selector change.
+Run `test/manual/tesco-dom-regression.js` after any Tesco selector change.
 
 ---
 
