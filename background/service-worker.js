@@ -341,6 +341,7 @@ async function analyzeIngredients(ingredientsText, productId) { // eslint-disabl
   const cached = await getCached(cacheKey);
   if (cached) return { novaScore: cached.novaScore, markers: cached.markers || [] };
 
+  // 'test' is a known OFF product barcode used to validate the v3 ingredient analysis endpoint
   const url = 'https://world.openfoodfacts.org/api/v3/product/test';
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 10000);
