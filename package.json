@@ -1,5 +1,5 @@
 {
-  "name": "nova-extension",
+  "name": "upf-scanner",
   "version": "1.2.1",
   "description": "Chrome extension that identifies ultra-processed foods on UK supermarket websites using NOVA classification",
   "main": "manifest.json",
@@ -11,7 +11,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/MikeCain21/nova-extension.git"
+    "url": "https://github.com/MikeCain21/upf-scanner.git"
   },
   "keywords": [
     "chrome-extension",
@@ -27,9 +27,9 @@
   "author": "MikeCain21",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/MikeCain21/nova-extension/issues"
+    "url": "https://github.com/MikeCain21/upf-scanner/issues"
   },
-  "homepage": "https://github.com/MikeCain21/nova-extension#readme",
+  "homepage": "https://github.com/MikeCain21/upf-scanner#readme",
   "devDependencies": {
     "jest": "^29.7.0",
     "sharp": "^0.34.5"

@@ -45,7 +45,7 @@ const NOVA1_PRODUCE_CATEGORIES = new Set([
 ]);
 
 // User-Agent is required by OpenFoodFacts Terms of Service.
-const USER_AGENT = 'NOVA-Extension/1.0.0 (open-source food classification tool)';
+const USER_AGENT = 'UPF-Scanner/1.0.0 (open-source food classification tool)';
 
 // Cache key prefix (short to save storage space).
 const CACHE_PREFIX = 'off_';
