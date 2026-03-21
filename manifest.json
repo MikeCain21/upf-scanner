@@ -144,15 +144,4 @@
       "128": "icons/icon128.png"
     },
     "default_title": "UPF Scanner \u2013 Spot Ultra-Processed Food"
-  },
-  "web_accessible_resources": [
-    {
-      "resources": [
-        "icons/*.png"
-      ],
-      "matches": [
-        "https://www.tesco.com/*"
-      ]
-    }
-  ]
-}
+  }}
