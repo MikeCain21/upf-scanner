@@ -26,6 +26,9 @@ importScripts('../lib/browser-polyfill.js');
 // Constants
 // ---------------------------------------------------------------------------
 
+/** Set to true to enable verbose logging in the browser console during development. */
+const DEBUG = false;
+
 const API_BASE_URL = 'https://world.openfoodfacts.org/api/v2/product';
 
 /** OFF category tags that indicate unprocessed fresh produce (NOVA 1 by definition). */
@@ -256,10 +259,10 @@ async function getCached(barcode) {
       return null;
     }
 
-    console.log(`[NOVA Cache] Hit for ${barcode}`);
+    if (DEBUG) console.log(`[NOVA Cache] Hit for ${barcode}`);
     return cached;
   } catch (err) {
-    console.warn('[NOVA Cache] Read error:', err.message);
+    if (DEBUG) console.warn('[NOVA Cache] Read error:', err.message);
     return null;
   }
 }
@@ -275,9 +278,9 @@ async function setCached(barcode, entry) {
   const key = CACHE_PREFIX + barcode;
   try {
     await browser.storage.local.set({ [key]: { ...entry, timestamp: Date.now() } });
-    console.log(`[NOVA Cache] Stored ${barcode}`);
+    if (DEBUG) console.log(`[NOVA Cache] Stored ${barcode}`);
   } catch (err) {
-    console.warn('[NOVA Cache] Write error:', err.message);
+    if (DEBUG) console.warn('[NOVA Cache] Write error:', err.message);
   }
 }
 
@@ -312,7 +315,7 @@ async function fetchProductByBarcode(barcode) {
     const data = await response.json();
     return parseApiResponse(data);
   } catch (err) {
-    console.warn(`[NOVA API] Fetch error for ${barcode}:`, err.message);
+    if (DEBUG) console.warn(`[NOVA API] Fetch error for ${barcode}:`, err.message);
     return null; // Network/parse error → trigger fallback in content script
   }
 }
@@ -370,10 +373,10 @@ async function analyzeIngredients(ingredientsText, productId) { // eslint-disabl
       await setCached(cacheKey, { novaScore, markers, productName: '' });
     }
 
-    console.log(`[NOVA API] Ingredient analysis → NOVA ${novaScore}, markers: ${markers.join(', ') || 'none'}`);
+    if (DEBUG) console.log(`[NOVA API] Ingredient analysis → NOVA ${novaScore}, markers: ${markers.join(', ') || 'none'}`);
     return { novaScore, markers };
   } catch (err) {
-    console.warn('[NOVA API] Ingredient analysis error:', err.message);
+    if (DEBUG) console.warn('[NOVA API] Ingredient analysis error:', err.message);
     return null;
   }
 }
@@ -407,11 +410,11 @@ async function lookupProduct(barcode) {
   }
 
   // 2. API lookup
-  console.log(`[NOVA API] Querying OpenFoodFacts for barcode ${barcode}`);
+  if (DEBUG) console.log(`[NOVA API] Querying OpenFoodFacts for barcode ${barcode}`);
   const product = await fetchProductByBarcode(barcode);
 
   if (!product) {
-    console.log(`[NOVA API] Not found in OpenFoodFacts: ${barcode}`);
+    if (DEBUG) console.log(`[NOVA API] Not found in OpenFoodFacts: ${barcode}`);
     return { source: 'not_found' };
   }
 
@@ -424,10 +427,10 @@ async function lookupProduct(barcode) {
       const productName = product.product_name || '';
       const offUrl = `https://world.openfoodfacts.org/product/${barcode}`;
       await setCached(barcode, { novaScore: 1, productName, markers: [], offUrl });
-      console.log(`[NOVA API] NOVA 1 inferred from fresh produce category for ${barcode} (${productName})`);
+      if (DEBUG) console.log(`[NOVA API] NOVA 1 inferred from fresh produce category for ${barcode} (${productName})`);
       return { source: 'api', novaScore: 1, productName, markers: [], offUrl };
     }
-    console.log(`[NOVA API] Product found but no NOVA data: ${barcode}`);
+    if (DEBUG) console.log(`[NOVA API] Product found but no NOVA data: ${barcode}`);
     return { source: 'no_nova' };
   }
 
@@ -437,7 +440,7 @@ async function lookupProduct(barcode) {
   const offUrl = `https://world.openfoodfacts.org/product/${barcode}`;
   await setCached(barcode, { novaScore, productName, markers, offUrl });
 
-  console.log(`[NOVA API] NOVA ${novaScore} (${productName}) from OpenFoodFacts for ${barcode}`);
+  if (DEBUG) console.log(`[NOVA API] NOVA ${novaScore} (${productName}) from OpenFoodFacts for ${barcode}`);
   return { source: 'api', novaScore, productName, markers, offUrl };
 }
 
@@ -446,7 +449,7 @@ async function lookupProduct(barcode) {
 // ---------------------------------------------------------------------------
 
 browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  console.log('[NOVA Background] Message received:', message.type, 'from', sender.tab?.url || 'popup');
+  if (DEBUG) console.log('[NOVA Background] Message received:', message.type, 'from', sender.tab?.url || 'popup');
 
   // ---------------------------------------------------------------------------
   // Extension-internal messages (popup → background): no tab/origin check needed
@@ -535,4 +538,4 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
   return false;
 });
 
-console.log('[NOVA Background] Service worker ready');
+if (DEBUG) console.log('[NOVA Background] Service worker ready');
