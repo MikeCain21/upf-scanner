@@ -20,7 +20,7 @@ npm test output here
 
 ## Checklist
 
-- [ ] `npm test` passes (320 tests green)
+- [ ] `npm test` passes
 - [ ] Manual verification in browser (if browser-facing change)
 - [ ] Existing supermarkets still work (no regression)
 - [ ] Code follows project style (JSDoc, ES6+, no hardcoded values)
