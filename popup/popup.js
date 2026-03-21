@@ -81,10 +81,6 @@
 
   /**
    * Queries the background for the NOVA score of the active tab and renders
-   * the product section when a score is available.
-   */
-  /**
-   * Queries the background for the NOVA score of the active tab and renders
    * the product section when a score is available. Retries once after 3 s if
    * the content script is still classifying (popup opened before badge appeared).
    *
