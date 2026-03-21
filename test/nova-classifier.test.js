@@ -282,7 +282,7 @@ describe('classifyByIngredients — NOVA 2 single culinary ingredient + NOVA 3 p
     expect(classifyByIngredients(['Cabbage', 'Salt', 'Lacto-fermented']).score).toBe(3);
   });
 
-  // Cheestrings fix — the specific product that prompted ADR-021
+  // Cheestrings fix — the specific product that prompted ADR-010
   it('returns NOVA 3 for acidity regulators with cheese ingredients', () => {
     const result = classifyByIngredients([
       'Medium Fat Hard Cheese',
@@ -326,7 +326,7 @@ describe('classifyByIngredients — NOVA 2 single culinary ingredient + NOVA 3 p
   });
 });
 
-// Regression: Tesco Pure Sunflower Oil (product 254918228) — ADR-018
+// Regression: Tesco Pure Sunflower Oil (product 254918228) — ADR-007
 describe('Tesco sunflower oil fast-path regression', () => {
   it('marketing copy tokens produce NOVA 1 from local classifier (known limitation — fix lives in pipeline guard)', () => {
     // Parsing "Made from 100% sunflower seeds, great for shallow frying" produces these tokens.

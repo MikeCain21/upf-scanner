@@ -322,7 +322,7 @@ describe('detectIndicators — E-number boundaries, modified starch, and safe in
 });
 
 // ---------------------------------------------------------------------------
-// OFF alignment additions — new indicators (ADR-010 update)
+// OFF alignment additions — new indicators (ADR-012)
 // ---------------------------------------------------------------------------
 
 describe('OFF alignment — lecithin (E322)', () => {
