@@ -1,4 +1,4 @@
-# NOVA Extension - .gitignore
+# UPF Scanner - .gitignore
 
 # Node modules (if using any build tools in future)
 node_modules/
@@ -77,6 +77,5 @@ ehthumbs.db
 *.backup
 *~
 
-# Package manager lock files (keep package.json, ignore locks for now)
-# package-lock.json
+# yarn.lock — not used; package-lock.json is tracked for reproducible installs
 # yarn.lock
