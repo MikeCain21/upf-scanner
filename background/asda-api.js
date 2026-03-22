@@ -16,7 +16,7 @@ const ASDA_PRODUCT_API_BASE =
 async function fetchAsdaProduct(productId, token) {
   if (!token) return null;
   try {
-    const url = `${ASDA_PRODUCT_API_BASE}${productId}?siteId=ASDA_GROCERIES&allImages=true&c_isPDP=true`;
+    const url = `${ASDA_PRODUCT_API_BASE}${encodeURIComponent(String(productId))}?siteId=ASDA_GROCERIES&allImages=true&c_isPDP=true`;
     const response = await fetch(url, {
       headers: {
         authorization: token,
