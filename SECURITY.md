@@ -30,7 +30,7 @@ The extension deliberately does **not** request:
 - `clipboardRead` / `clipboardWrite` — cannot access clipboard
 - `geolocation` — cannot access location
 - `identity` — no user account or sign-in
-- `externally_connectable` — web pages cannot message the extension
+- `externally_connectable` (matches) — web pages cannot message the extension; declared with `ids: []` to explicitly block all other extensions too
 
 ---
 
@@ -54,7 +54,7 @@ The extension deliberately does **not** request:
 
 - All requests use **HTTPS only** — no HTTP fallbacks
 - Fetch calls have explicit timeouts (8s barcode lookup, 10s ingredient analysis)
-- OpenFoodFacts is contacted only from the background **service worker**, never from injected content scripts
+- All external API calls (OpenFoodFacts, and each retailer's own product API) are made exclusively from the background **service worker** — content scripts are fetch-free. This is enforced for all six supported adapters as of ADR-014/ADR-015.
 
 ---
 
@@ -69,6 +69,10 @@ The extension deliberately does **not** request:
 | `debugMode` | `boolean` | Until cleared by user |
 
 No PII is stored. The cache can be cleared at any time via the popup "Clear Cache" button.
+
+Cache entries are encrypted at rest using **AES-256-GCM** (`lib/storage-crypto.js`) with a per-install random key. Raw classification data is never written to `chrome.storage.local` in plaintext.
+
+**Incognito tabs:** Cache writes are skipped entirely when the request originates from an incognito tab, preventing product lookups from being persisted across private browsing sessions. Cache reads are still permitted (a cache hit reveals nothing about the current session).
 
 ### `chrome.storage.session` (cleared on browser restart)
 
@@ -93,12 +97,19 @@ This is used to display the current product's NOVA score in the popup without re
 
 - The content script runs in an **isolated world** — it cannot access the page's JavaScript variables or `localStorage`.
 - DOM modifications are limited to injecting badge elements alongside product listings.
-- All user-visible text is set via `textContent`, never `innerHTML` with dynamic data, preventing XSS.
+- All user-visible text is set via `textContent`. `innerHTML` is not used anywhere in the extension; badge DOM updates use `replaceChildren()`, preventing XSS.
 
 ### Message Passing Security
 
 - The background service worker validates that messages originate from a supported supermarket tab (tesco.com, sainsburys.co.uk, asda.com, morrisons.com, waitrose.com, ocado.com) before processing them.
-- `externally_connectable` is not declared, so arbitrary web pages cannot message the extension.
+- `externally_connectable` is declared with `ids: []` and no `matches`, explicitly blocking all other extensions and web pages from messaging the extension.
+- Message payloads are validated by `background/message-validator.js` before processing:
+  - `novaScore` must be an integer in range 1–4
+  - `barcode` must be a 12- or 13-digit numeric string
+  - `ingredientsText` is capped at 50,000 characters
+  - `tabId` must be a positive integer; `productName` is clamped to 200 characters
+- Popup-only handlers (`GET_PAGE_NOVA`, `CLEAR_CACHE`) are gated on `!sender.tab`, preventing content scripts from invoking them even from allowed origins.
+- ASDA auth tokens are rejected if they contain `\r` or `\n` characters, preventing HTTP header injection.
 
 ---
 
@@ -110,9 +121,10 @@ This is used to display the current product's NOVA score in the popup without re
 |--------------|-------------|------------|
 | Malicious OpenFoodFacts response | Low | Responses are parsed with validation; no `eval()` on response data |
 | XSS via ingredient text | Low | Ingredient text is set via `textContent` only |
-| Content script → background message injection | Very Low | Sender origin validated against all 6 supported supermarkets (derived dynamically from manifest); no `externally_connectable` |
+| Content script → background message injection | Very Low | Sender origin validated with exact equality against all 6 supported supermarkets; payloads validated (score, barcode, text length) by `message-validator.js`; popup-only handlers gated on `!sender.tab`; `externally_connectable` blocks all other extensions and web pages |
 | Supply chain (npm) | Low | No runtime npm dependencies; all code is bespoke |
-| Barcode injection via JSON-LD | Very Low | Barcodes URL-encoded before use in fetch URLs |
+| Injection via dynamic API parameters | Very Low | All dynamic values (barcodes, product IDs, SKUs) are URL-encoded before use in fetch URLs across all adapters |
+| Local storage read (e.g. by another extension) | Very Low | Cache entries encrypted with AES-256-GCM; ciphertext is useless without the per-install key |
 
 ### What This Extension Cannot Do
 
