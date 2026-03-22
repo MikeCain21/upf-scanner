@@ -334,7 +334,7 @@ async function fetchProductByBarcode(barcode) {
  * @param {string|null} productId  - Unused; kept for backward-compatible call signature
  * @returns {Promise<{novaScore: number|null, markers: string[]}|null>}
  */
-async function analyzeIngredients(ingredientsText, productId) { // eslint-disable-line no-unused-vars
+async function analyzeIngredients(ingredientsText, productId, isIncognito = false) { // eslint-disable-line no-unused-vars
   // Cache keyed by ingredient text hash — reformulations get a fresh cache entry automatically
   const ingredientHash = hashIngredients(ingredientsText);
   const cacheKey = 'ingredients_' + ingredientHash;
@@ -370,8 +370,13 @@ async function analyzeIngredients(ingredientsText, productId) { // eslint-disabl
     const markers = extractNovaMarkers(data.product?.nova_groups_markers, novaScore);
 
     // Cache successful result — keyed by ingredient hash (see cacheKey above)
+    // Skip cache write in incognito to avoid persisting private browsing data.
     if (novaScore) {
-      await setCached(cacheKey, { novaScore, markers, productName: '' });
+      if (isIncognito) {
+        if (DEBUG) console.log('[NOVA Cache] Skipping ingredient cache write — incognito tab');
+      } else {
+        await setCached(cacheKey, { novaScore, markers, productName: '' });
+      }
     }
 
     if (DEBUG) console.log(`[NOVA API] Ingredient analysis → NOVA ${novaScore}, markers: ${markers.join(', ') || 'none'}`);
@@ -397,7 +402,7 @@ async function analyzeIngredients(ingredientsText, productId) { // eslint-disabl
  * @param {string} barcode
  * @returns {Promise<Object>}
  */
-async function lookupProduct(barcode) {
+async function lookupProduct(barcode, isIncognito = false) {
   // 1. Cache hit
   const cached = await getCached(barcode);
   if (cached) {
@@ -427,7 +432,11 @@ async function lookupProduct(barcode) {
     if (isFreshProduce) {
       const productName = product.product_name || '';
       const offUrl = `https://world.openfoodfacts.org/product/${barcode}`;
-      await setCached(barcode, { novaScore: 1, productName, markers: [], offUrl });
+      if (isIncognito) {
+        if (DEBUG) console.log(`[NOVA Cache] Skipping cache write — incognito tab (${barcode})`);
+      } else {
+        await setCached(barcode, { novaScore: 1, productName, markers: [], offUrl });
+      }
       if (DEBUG) console.log(`[NOVA API] NOVA 1 inferred from fresh produce category for ${barcode} (${productName})`);
       return { source: 'api', novaScore: 1, productName, markers: [], offUrl };
     }
@@ -436,10 +445,15 @@ async function lookupProduct(barcode) {
   }
 
   // 3. Cache successful result and return
+  // Skip cache write in incognito to avoid persisting private browsing data.
   const productName = product.product_name || '';
   const markers = extractNovaMarkers(product.nova_groups_markers, novaScore);
   const offUrl = `https://world.openfoodfacts.org/product/${barcode}`;
-  await setCached(barcode, { novaScore, productName, markers, offUrl });
+  if (isIncognito) {
+    if (DEBUG) console.log(`[NOVA Cache] Skipping cache write — incognito tab (${barcode})`);
+  } else {
+    await setCached(barcode, { novaScore, productName, markers, offUrl });
+  }
 
   if (DEBUG) console.log(`[NOVA API] NOVA ${novaScore} (${productName}) from OpenFoodFacts for ${barcode}`);
   return { source: 'api', novaScore, productName, markers, offUrl };
@@ -507,7 +521,8 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
       return false;
     }
 
-    lookupProduct(barcode)
+    const isIncognito = sender.tab?.incognito ?? false;
+    lookupProduct(barcode, isIncognito)
       .then(result => sendResponse({ success: true, ...result }))
       .catch(err => {
         console.error('[NOVA Background] Unexpected error:', err); // Always log: unexpected errors should surface in production
@@ -524,7 +539,8 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
       return false;
     }
 
-    analyzeIngredients(ingredientsText, productId || null)
+    const isIncognito = sender.tab?.incognito ?? false;
+    analyzeIngredients(ingredientsText, productId || null, isIncognito)
       .then(result => sendResponse({
         success: true,
         novaScore: result?.novaScore ?? null,
