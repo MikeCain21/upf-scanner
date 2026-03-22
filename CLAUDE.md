@@ -482,6 +482,7 @@ const novaScore = product.nova_groups_tags?.[0] || product.nova_group;
 - **Use MutationObserver** for detecting new products on infinite scroll / SPAs
 - **Debounce scroll handlers** and use `requestIdleCallback` for non-urgent classification work
 - **Incognito mode** — Never write to `chrome.storage.local` when `sender.tab.incognito` is true; reading from cache is permitted. Classification still works in incognito (API calls proceed). See ADR-013.
+- **Network requests from adapters** — Site-specific API calls (e.g. fetching product data from a retailer's own API) must be delegated to the service worker via `browser.runtime.sendMessage`, not made directly from the content script. The content script may read same-origin cookies to extract auth tokens, but the `fetch()` must happen in the background. See ADR-014 (ASDA) for the reference implementation.
 
 ---
 

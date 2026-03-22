@@ -146,6 +146,8 @@ The default implementation in `BaseAdapter` parses all `<script type="applicatio
 - The site embeds the barcode outside JSON-LD (e.g., in a `data-*` attribute or a separate API call)
 - The JSON-LD uses `gtin` instead of `gtin13` (update `_extractJsonLd` in that case)
 
+> **Security rule:** If your override needs to call a retailer API, do **not** use `fetch()` directly in the adapter. Instead, send a message to the service worker and handle the network request there. The content script may read same-origin cookies to extract auth tokens, but the actual HTTP request must originate from the background. See `content/sites/asda.js` + `background/asda-api.js` + ADR-014 for the reference pattern.
+
 ---
 
 ### Optional: `extractIngredients(doc) → string|null`
