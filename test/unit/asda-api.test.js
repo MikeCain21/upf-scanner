@@ -46,4 +46,16 @@ describe('fetchAsdaProduct', () => {
     const result = await fetchAsdaProduct('9167536', 'Bearer mock-token');
     expect(result).toBeNull();
   });
+
+  it('returns null and does not call fetch when token contains a newline', async () => {
+    const result = await fetchAsdaProduct('9167536', 'Bearer mock\ninjected: header');
+    expect(result).toBeNull();
+    expect(global.fetch).not.toHaveBeenCalled();
+  });
+
+  it('returns null and does not call fetch when token contains a carriage return', async () => {
+    const result = await fetchAsdaProduct('9167536', 'Bearer mock\rinjected: header');
+    expect(result).toBeNull();
+    expect(global.fetch).not.toHaveBeenCalled();
+  });
 });

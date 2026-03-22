@@ -15,6 +15,7 @@ const ASDA_PRODUCT_API_BASE =
  */
 async function fetchAsdaProduct(productId, token) {
   if (!token) return null;
+  if (/[\r\n]/.test(token)) return null; // prevent CRLF header injection
   try {
     const url = `${ASDA_PRODUCT_API_BASE}${encodeURIComponent(String(productId))}?siteId=ASDA_GROCERIES&allImages=true&c_isPDP=true`;
     const response = await fetch(url, {

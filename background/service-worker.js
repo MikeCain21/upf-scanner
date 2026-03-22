@@ -24,6 +24,7 @@ importScripts('../lib/browser-polyfill.js');
 importScripts('asda-api.js');
 importScripts('sainsburys-api.js');
 importScripts('ocado-api.js');
+importScripts('message-validator.js');
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -470,30 +471,38 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (DEBUG) console.log('[NOVA Background] Message received:', message.type, 'from', sender.tab?.url || 'popup');
 
   // ---------------------------------------------------------------------------
-  // Extension-internal messages (popup → background): no tab/origin check needed
+  // Popup-only messages — sender.tab is undefined when the caller is the popup
+  // or another extension page. Content scripts always have sender.tab set, so
+  // gating on !sender.tab prevents content scripts (including compromised ones
+  // on allowed origins) from reaching these handlers.
   // ---------------------------------------------------------------------------
 
-  if (message.type === 'GET_PAGE_NOVA') {
-    if (Number.isInteger(message.tabId) && message.tabId > 0) {
-      loadTabState(message.tabId)
-        .then(state => sendResponse(state || { novaScore: null, productName: null, barcode: null }))
-        .catch(() => sendResponse({ novaScore: null, productName: null, barcode: null }));
-    } else {
-      sendResponse({ novaScore: null, productName: null, barcode: null });
+  if (!sender.tab) {
+    if (message.type === 'GET_PAGE_NOVA') {
+      if (Number.isInteger(message.tabId) && message.tabId > 0) {
+        loadTabState(message.tabId)
+          .then(state => sendResponse(state || { novaScore: null, productName: null, barcode: null }))
+          .catch(() => sendResponse({ novaScore: null, productName: null, barcode: null }));
+      } else {
+        sendResponse({ novaScore: null, productName: null, barcode: null });
+      }
+      return true; // keep channel open for async response
     }
-    return true; // keep channel open for async response
-  }
 
-  if (message.type === 'CLEAR_CACHE') {
-    (async () => {
-      const allData = await browser.storage.local.get(null);
-      const cacheKeys = Object.keys(allData).filter(k =>
-        k.startsWith('product_') || k.startsWith('ingredients_') || k.startsWith(CACHE_PREFIX)
-      );
-      await browser.storage.local.remove(cacheKeys);
-      sendResponse({ cleared: cacheKeys.length });
-    })();
-    return true; // async
+    if (message.type === 'CLEAR_CACHE') {
+      (async () => {
+        const allData = await browser.storage.local.get(null);
+        const cacheKeys = Object.keys(allData).filter(k =>
+          k.startsWith('product_') || k.startsWith('ingredients_') || k.startsWith(CACHE_PREFIX)
+        );
+        await browser.storage.local.remove(cacheKeys);
+        sendResponse({ cleared: cacheKeys.length });
+      })();
+      return true; // async
+    }
+
+    sendResponse({ success: false, error: 'Unknown message type' });
+    return false;
   }
 
   // ---------------------------------------------------------------------------
@@ -501,7 +510,7 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
   // ---------------------------------------------------------------------------
 
   const senderOrigin = sender.origin || new URL(sender.tab?.url || 'about:blank').origin;
-  if (!sender.tab || !ALLOWED_ORIGINS.includes(senderOrigin)) {
+  if (!ALLOWED_ORIGINS.includes(senderOrigin)) {
     console.warn('[NOVA Background] Rejected message from unexpected sender:', senderOrigin); // Always log: security-relevant rejection, not debug noise
     sendResponse({ success: false, error: 'Unauthorized sender' });
     return false;
@@ -509,13 +518,20 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   if (message.type === 'SET_PAGE_NOVA') {
     const tabId = sender.tab.id;
-    const { novaScore, productName, barcode, markers } = message;
+    const { productName, markers } = message;
+    const novaScore = isValidNovaScore(message.novaScore) ? message.novaScore : null;
+    const barcode = isValidBarcode(message.barcode) ? message.barcode : null;
     if (DEBUG && typeof productName === 'string' && productName.length > 200) {
       console.warn('[NOVA Background] SET_PAGE_NOVA: productName truncated to 200 chars');
     }
-    const state = { novaScore: novaScore || null, productName: (typeof productName === 'string' ? productName.slice(0, 200) : null) || null, barcode: barcode || null, markers: Array.isArray(markers) ? markers : [] };
+    const state = {
+      novaScore,
+      productName: (typeof productName === 'string' ? productName.slice(0, 200) : null) || null,
+      barcode,
+      markers: Array.isArray(markers) ? markers : [],
+    };
     saveTabState(tabId, state).catch(() => {});
-    updateBadge(tabId, novaScore || null);
+    updateBadge(tabId, novaScore);
     sendResponse({ success: true });
     return false;
   }
@@ -539,14 +555,16 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 
   if (message.type === 'ANALYZE_INGREDIENTS') {
-    const { ingredientsText, productId } = message;
-    if (!ingredientsText) {
+    const rawText = typeof message.ingredientsText === 'string'
+      ? message.ingredientsText.slice(0, MAX_INGREDIENTS_TEXT_LENGTH)
+      : null;
+    if (!rawText) {
       sendResponse({ success: false, error: 'No ingredientsText provided' });
       return false;
     }
 
     const isIncognito = sender.tab?.incognito ?? false;
-    analyzeIngredients(ingredientsText, productId || null, isIncognito)
+    analyzeIngredients(rawText, message.productId || null, isIncognito)
       .then(result => sendResponse({
         success: true,
         novaScore: result?.novaScore ?? null,
