@@ -501,7 +501,7 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
   // ---------------------------------------------------------------------------
 
   const senderOrigin = sender.origin || new URL(sender.tab?.url || 'about:blank').origin;
-  if (!sender.tab || !ALLOWED_ORIGINS.some(o => senderOrigin.startsWith(o))) {
+  if (!sender.tab || !ALLOWED_ORIGINS.includes(senderOrigin)) {
     console.warn('[NOVA Background] Rejected message from unexpected sender:', senderOrigin); // Always log: security-relevant rejection, not debug noise
     sendResponse({ success: false, error: 'Unauthorized sender' });
     return false;
