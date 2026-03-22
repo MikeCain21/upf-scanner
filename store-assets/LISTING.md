@@ -47,11 +47,11 @@ Display NOVA 1–4 ultra-processed food classification badges on product pages o
 - No browsing history
 - No health or financial information
 - No location data
-- No authentication information
+- No authentication information is collected or stored. On ASDA pages, a guest session token (not linked to any user account or login) is temporarily read to call ASDA's own product API; it works even when you are not signed in, is never stored, and is never sent to third parties.
 
 The only external communication is outbound requests to `world.openfoodfacts.org` to look up product NOVA scores by barcode or ingredient list. These requests contain product data (barcode/ingredients) from the page being viewed — no user identity is attached.
 
-NOVA classification results are cached in `chrome.storage.local` on the user's device only. Nothing is sent to any server operated by this extension.
+NOVA classification results are cached locally in `chrome.storage.local`, encrypted with AES-256-GCM. The encrypted cache never leaves the user's device and is not sent to any server operated by this extension.
 
 ### Privacy Policy
 

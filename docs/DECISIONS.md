@@ -326,3 +326,29 @@ requests if the endpoints require it in future; omitted by default.
   testable via Jest (dual `typeof module` export pattern)
 - If either endpoint requires session cookies, the content script can extract the
   relevant cookie value and pass it in the message without needing the `cookies` permission
+
+---
+
+## ADR-015: AES-256-GCM encryption for local cache
+**Date:** 2026-03-22
+**Status:** Accepted
+
+**Context:**
+The Chrome Web Store User Data FAQ requires that stored user data be protected using "a strong encryption method such as RSA or AES." The extension caches NOVA scores and product names in `chrome.storage.local`. While this storage is sandboxed to the extension, adding application-level encryption satisfies the policy requirement explicitly.
+
+**Options Considered:**
+1. No encryption — argue cached NOVA scores are not personal data (risky, policy language is broad)
+2. AES-256-GCM with a generated per-install key stored in `chrome.storage.local` (chosen)
+3. AES-256-GCM with a key derived from a fixed constant (weaker — same key for all installs)
+
+**Decision:**
+Generate a random 256-bit AES-GCM key on first install, persist as raw base64 in `chrome.storage.local._enc_key`, and encrypt all `off_*` and `ingredients_*` cache values. Key is cached in memory for the service worker session. Legacy unencrypted entries are treated as cache misses and removed on next read.
+
+`debugMode` (a boolean UI preference) is not encrypted — it contains no personal or sensitive data.
+
+**Consequences:**
+- All new cache entries are AES-256-GCM encrypted ✅
+- Existing unencrypted entries are flushed transparently on first read ✅
+- No user-visible change — cache still works, Clear Cache button still works ✅
+- Slight latency increase on first cache operation (key generation ~1ms) — negligible ✅
+- Key loss (e.g. storage wipe) causes a full cache miss, not data loss ✅
