@@ -35,6 +35,7 @@ test/pages/
 
 # Claude Code local settings
 .claude/
+.mcp.json
 
 # Git worktrees (isolated development workspaces)
 .worktrees/
