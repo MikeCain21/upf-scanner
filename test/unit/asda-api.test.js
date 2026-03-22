@@ -1,14 +1,14 @@
-const { fetchAsdaProduct, ASDA_PRODUCT_API_URL } = require('../../background/asda-api');
+const { fetchAsdaProduct, ASDA_PRODUCT_API_BASE } = require('../../background/asda-api');
 
 describe('fetchAsdaProduct', () => {
   beforeEach(() => { global.fetch = jest.fn(); });
   afterEach(() => { jest.clearAllMocks(); });
 
   it('returns product data on success', async () => {
-    const mockData = { id: '9167536', upc: '01234567890', c_BRANDBANK_JSON: null };
+    const mockData = { id: '9167536', upc: '028400090018', c_BRANDBANK_JSON: null };
     global.fetch.mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ data: [mockData] }),
+      json: async () => mockData,
     });
     const result = await fetchAsdaProduct('9167536', 'Bearer mock-token');
     expect(result).toEqual(mockData);
@@ -17,6 +17,15 @@ describe('fetchAsdaProduct', () => {
       expect.objectContaining({
         headers: expect.objectContaining({ authorization: 'Bearer mock-token' }),
       })
+    );
+  });
+
+  it('calls the correct ASDA API URL', async () => {
+    global.fetch.mockResolvedValueOnce({ ok: true, json: async () => ({}) });
+    await fetchAsdaProduct('9167536', 'tok');
+    expect(global.fetch).toHaveBeenCalledWith(
+      `${ASDA_PRODUCT_API_BASE}9167536?siteId=ASDA_GROCERIES&allImages=true&c_isPDP=true`,
+      expect.any(Object)
     );
   });
 
@@ -34,15 +43,6 @@ describe('fetchAsdaProduct', () => {
 
   it('returns null on network error', async () => {
     global.fetch.mockRejectedValueOnce(new Error('Network error'));
-    const result = await fetchAsdaProduct('9167536', 'Bearer mock-token');
-    expect(result).toBeNull();
-  });
-
-  it('returns null when response data array is empty', async () => {
-    global.fetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ data: [] }),
-    });
     const result = await fetchAsdaProduct('9167536', 'Bearer mock-token');
     expect(result).toBeNull();
   });
