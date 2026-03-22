@@ -177,7 +177,7 @@
     badgeEl.addEventListener('mouseenter', () => {
       const tooltip = getTooltip();
 
-      tooltip.innerHTML = '';
+      tooltip.replaceChildren();
       const textNode = document.createElement('span');
       textNode.className = 'nova-tooltip-text';
       textNode.textContent = tooltipText;
