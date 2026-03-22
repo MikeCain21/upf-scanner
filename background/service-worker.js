@@ -22,6 +22,8 @@
 // no-op on Firefox where browser.* is native.
 importScripts('../lib/browser-polyfill.js');
 importScripts('asda-api.js');
+importScripts('sainsburys-api.js');
+importScripts('ocado-api.js');
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -569,6 +571,30 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
       .catch(() => {
         sendResponse({ success: false, error: 'ASDA API error' });
       });
+    return true; // async response
+  }
+
+  if (message.type === 'FETCH_SAINSBURYS_BARCODES') {
+    const { sku } = message;
+    if (!sku) {
+      sendResponse({ success: false, error: 'Missing sku' });
+      return false;
+    }
+    fetchSainsburysBarcodes(sku, message.cookieHeader ?? null)
+      .then(data => sendResponse({ success: true, data }))
+      .catch(() => sendResponse({ success: false, error: 'Sainsburys API error' }));
+    return true; // async response
+  }
+
+  if (message.type === 'FETCH_OCADO_INGREDIENTS') {
+    const { productId } = message;
+    if (!productId) {
+      sendResponse({ success: false, error: 'Missing productId' });
+      return false;
+    }
+    fetchOcadoIngredients(productId, message.cookieHeader ?? null)
+      .then(data => sendResponse({ success: true, data }))
+      .catch(() => sendResponse({ success: false, error: 'Ocado API error' }));
     return true; // async response
   }
 

@@ -42,9 +42,6 @@
 const SAINSBURYS_SITE_ID = 'sainsburys';
 const SAINSBURYS_HOSTNAME = 'sainsburys.co.uk';
 
-/** GOL API path — appended with SKU to retrieve EAN barcodes */
-const SAINSBURYS_GOL_API = '/groceries-api/gol-services/product/v1/product/';
-
 /** Valid product barcode patterns: EAN-8 (8 digits) or EAN-13 (13 digits) */
 const SAINSBURYS_EAN_PATTERN = /^\d{8}$|^\d{13}$/;
 
@@ -145,12 +142,12 @@ class SainsburysAdapter extends BaseAdapter {
   }
 
   /**
-   * Fetches EAN barcodes for the main product from the Sainsbury's GOL API.
+   * Fetches EAN barcodes for the main product via the service worker.
    *
-   * Extracts the SKU from JSON-LD, then requests
-   * /groceries-api/gol-services/product/v1/product/{sku} which returns
-   * { "eans": ["3176575128962", ...] }. Filters the response to valid EAN-8 and
-   * EAN-13 codes only (same rationale as WaitroseAdapter.extractBarcodes).
+   * Delegates to background/sainsburys-api.js via browser.runtime.sendMessage
+   * (FETCH_SAINSBURYS_BARCODES) per Chrome security guidelines (ADR-015).
+   * The service worker calls the GOL API and returns { eans: [...] }.
+   * Filters the response to valid EAN-8 and EAN-13 codes only.
    *
    * Returns an empty array on any error so the extension degrades gracefully
    * to ingredient analysis or the local classifier.
@@ -162,10 +159,12 @@ class SainsburysAdapter extends BaseAdapter {
     const sku = this._extractSku(doc);
     if (!sku) return [];
     try {
-      const response = await fetch(`${SAINSBURYS_GOL_API}${sku}`);
-      if (!response.ok) return [];
-      const data = await response.json();
-      const eans = data?.eans;
+      const response = await browser.runtime.sendMessage({
+        type: 'FETCH_SAINSBURYS_BARCODES',
+        sku,
+      });
+      if (!response?.success || !response.data) return [];
+      const eans = response.data.eans;
       if (!Array.isArray(eans) || eans.length === 0) return [];
       return eans.filter(ean => SAINSBURYS_EAN_PATTERN.test(String(ean)));
     } catch {

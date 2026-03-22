@@ -46,9 +46,6 @@
 const OCADO_SITE_ID = 'ocado';
 const OCADO_HOSTNAME = 'ocado.com';
 
-/** BOP API path — append ?retailerProductId={id} */
-const OCADO_BOP_API = '/api/webproductpagews/v5/products/bop';
-
 /** Field title for ingredients in BOP API response */
 const OCADO_INGREDIENTS_FIELD = 'ingredients';
 
@@ -126,8 +123,9 @@ class OcadoAdapter extends BaseAdapter {
   /**
    * Extracts ingredient text from the Ocado product detail page.
    *
-   * Primary: fetches the BOP API at /api/webproductpagews/v5/products/bop and
-   * reads bopData.fields[].content where title === "ingredients".
+   * Primary: delegates to the service worker via browser.runtime.sendMessage
+   * (FETCH_OCADO_INGREDIENTS → background/ocado-api.js) per Chrome security
+   * guidelines (ADR-015). Reads bopData.fields[].content where title === "ingredients".
    *
    * Fallback: searches for an <h2> with text "Ingredients" and returns the
    * textContent of its nextElementSibling.
@@ -141,13 +139,15 @@ class OcadoAdapter extends BaseAdapter {
     const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
     const id = this._getRetailerProductId(pathname);
 
-    // Primary: BOP API
+    // Primary: BOP API via service worker
     if (id) {
       try {
-        const resp = await fetch(`${OCADO_BOP_API}?retailerProductId=${id}`);
-        if (resp.ok) {
-          const data = await resp.json();
-          const fields = data?.bopData?.fields ?? [];
+        const response = await browser.runtime.sendMessage({
+          type: 'FETCH_OCADO_INGREDIENTS',
+          productId: id,
+        });
+        if (response?.success && response.data) {
+          const fields = response.data?.bopData?.fields ?? [];
           const field = fields.find(f => f.title === OCADO_INGREDIENTS_FIELD);
           if (field?.content) return field.content;
         }

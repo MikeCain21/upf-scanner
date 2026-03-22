@@ -5,10 +5,10 @@
  *
  * Tests cover: isSupported, isMainProduct, detectProducts, extractProductInfo,
  * extractIngredients (accordion label matching + length guard), and
- * extractBarcodes (async GOL API fetch + EAN filtering + error paths).
+ * extractBarcodes (async, delegated via service worker + EAN filtering + error paths).
  *
- * SainsburysAdapter.extractBarcodes is async — it fetches the Sainsbury's GOL
- * API at runtime. Tests mock global.fetch to avoid network calls.
+ * SainsburysAdapter.extractBarcodes delegates to the service worker via
+ * browser.runtime.sendMessage (ADR-015). Tests mock global.browser.runtime.sendMessage.
  *
  * Run with: npm test
  *           npx jest test/sainsburys
@@ -229,28 +229,36 @@ describe('extractIngredients', () => {
 // ---------------------------------------------------------------------------
 
 describe('extractBarcodes', () => {
-  it('fetches the GOL API with the correct URL and returns EAN-13 codes', async () => {
+  beforeEach(() => {
+    global.browser = { runtime: { sendMessage: jest.fn() } };
+  });
+
+  afterEach(() => {
+    delete global.browser;
+    jest.clearAllMocks();
+  });
+
+  it('sends FETCH_SAINSBURYS_BARCODES message with sku and returns EAN-13 codes', async () => {
     const doc = fakeDocWithSku('2852652');
-    global.fetch = jest.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ eans: ['3176575128962', '3176575493930'] }),
+    global.browser.runtime.sendMessage.mockResolvedValueOnce({
+      success: true,
+      data: { eans: ['3176575128962', '3176575493930'] },
     });
 
     const result = await adapter.extractBarcodes(doc);
 
-    expect(global.fetch).toHaveBeenCalledWith(
-      '/groceries-api/gol-services/product/v1/product/2852652'
-    );
+    expect(global.browser.runtime.sendMessage).toHaveBeenCalledWith({
+      type: 'FETCH_SAINSBURYS_BARCODES',
+      sku: '2852652',
+    });
     expect(result).toEqual(['3176575128962', '3176575493930']);
   });
 
   it('filters out non-EAN values and keeps valid EAN-8 and EAN-13 codes', async () => {
     const doc = fakeDocWithSku('1234567');
-    global.fetch = jest.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        eans: ['12345678', '1234567890123', '999', 'NOTANEAN', '123456789'],
-      }),
+    global.browser.runtime.sendMessage.mockResolvedValueOnce({
+      success: true,
+      data: { eans: ['12345678', '1234567890123', '999', 'NOTANEAN', '123456789'] },
     });
 
     const result = await adapter.extractBarcodes(doc);
@@ -259,29 +267,20 @@ describe('extractBarcodes', () => {
     expect(result).toEqual(['12345678', '1234567890123']);
   });
 
-  it('returns empty array when fetch throws a network error', async () => {
+  it('returns empty array when sendMessage throws', async () => {
     const doc = fakeDocWithSku('9999999');
-    global.fetch = jest.fn().mockRejectedValue(new Error('Network error'));
+    global.browser.runtime.sendMessage.mockRejectedValueOnce(new Error('Extension error'));
 
     const result = await adapter.extractBarcodes(doc);
 
     expect(result).toEqual([]);
   });
 
-  it('returns empty array when the GOL API returns a non-OK HTTP status', async () => {
+  it('returns empty array when message returns success: false', async () => {
     const doc = fakeDocWithSku('9999999');
-    global.fetch = jest.fn().mockResolvedValue({ ok: false });
-
-    const result = await adapter.extractBarcodes(doc);
-
-    expect(result).toEqual([]);
-  });
-
-  it('returns empty array when the GOL API response has no eans field', async () => {
-    const doc = fakeDocWithSku('9999999');
-    global.fetch = jest.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ product: { name: 'Frubes' } }),
+    global.browser.runtime.sendMessage.mockResolvedValueOnce({
+      success: false,
+      error: 'Sainsburys API error',
     });
 
     const result = await adapter.extractBarcodes(doc);
@@ -289,13 +288,24 @@ describe('extractBarcodes', () => {
     expect(result).toEqual([]);
   });
 
-  it('returns empty array without calling fetch when no SKU is available', async () => {
-    const doc = fakeDoc(); // no JSON-LD at all
-    global.fetch = jest.fn();
+  it('returns empty array when the response data has no eans field', async () => {
+    const doc = fakeDocWithSku('9999999');
+    global.browser.runtime.sendMessage.mockResolvedValueOnce({
+      success: true,
+      data: { product: { name: 'Frubes' } },
+    });
 
     const result = await adapter.extractBarcodes(doc);
 
-    expect(global.fetch).not.toHaveBeenCalled();
+    expect(result).toEqual([]);
+  });
+
+  it('returns empty array without sending message when no SKU is available', async () => {
+    const doc = fakeDoc(); // no JSON-LD at all
+
+    const result = await adapter.extractBarcodes(doc);
+
+    expect(global.browser.runtime.sendMessage).not.toHaveBeenCalled();
     expect(result).toEqual([]);
   });
 });

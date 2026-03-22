@@ -1,7 +1,7 @@
 # Architecture Decision Records
 
 **Project:** UPF Scanner
-**Last Updated:** 2026-03-21
+**Last Updated:** 2026-03-22
 
 > This document records non-obvious architectural and technical decisions. Straightforward choices (platform, framework, caching mechanism) are omitted — the code itself is sufficient documentation for those.
 
@@ -285,3 +285,44 @@ message. Service worker makes the authenticated fetch via `background/asda-api.j
 - No new permissions required
 - `background/asda-api.js` is independently testable via Jest (dual `typeof module` export pattern)
 - Incognito flag available in service worker handler for future cache-skip logic
+
+---
+
+## ADR-015: Delegate Sainsbury's and Ocado API Calls to Service Worker
+
+**Date:** 2026-03-22
+**Status:** Accepted
+
+**Context:**
+Chrome's extension security guidelines state that `fetch()` calls must not be made from
+content scripts, because content scripts run in the same renderer process as the web page
+and are vulnerable to side-channel attacks (e.g. Spectre). ADR-014 established the
+reference pattern for ASDA. A subsequent audit of all six adapters found that two still
+made direct `fetch()` calls from content scripts:
+- `content/sites/sainsburys.js`: GOL API call in `extractBarcodes()`
+- `content/sites/ocado.js`: BOP API call in `extractIngredients()`
+
+Both calls were same-origin relative URLs relying on automatic cookie propagation. The
+other four adapters (Tesco, Morrisons, Waitrose, and ASDA) required no changes.
+
+**Options Considered:**
+1. Leave as-is — same-origin cookies work, risk is theoretical
+2. Delegate both calls to service worker following ADR-014 pattern — consistent,
+   compliant, content scripts become fetch-free
+
+**Decision:** Option 2. Both adapters now send `browser.runtime.sendMessage` to the
+service worker:
+- Sainsbury's: `FETCH_SAINSBURYS_BARCODES` → `background/sainsburys-api.js`
+- Ocado: `FETCH_OCADO_INGREDIENTS` → `background/ocado-api.js`
+
+The content scripts no longer contain `fetch()` calls. An optional `cookieHeader`
+parameter is accepted by both service worker API functions to support session-authenticated
+requests if the endpoints require it in future; omitted by default.
+
+**Consequences:**
+- All six site adapters are now fetch-free in the content script context
+- Consistent with ADR-014 and Chrome security guidelines
+- `background/sainsburys-api.js` and `background/ocado-api.js` are independently
+  testable via Jest (dual `typeof module` export pattern)
+- If either endpoint requires session cookies, the content script can extract the
+  relevant cookie value and pass it in the message without needing the `cookies` permission

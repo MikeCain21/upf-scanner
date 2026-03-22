@@ -6,9 +6,9 @@
  * Tests cover: isSupported, isMainProduct, detectProducts, extractProductInfo,
  * extractBarcode (always null), and extractIngredients (BOP API + DOM fallback).
  *
- * OcadoAdapter fetches the BOP API for ingredients — global.fetch is mocked
- * per test to avoid real HTTP calls. The DOM fallback path (h2 sibling) is
- * also tested for when the API is unavailable.
+ * OcadoAdapter delegates ingredient fetching to the service worker via
+ * browser.runtime.sendMessage (ADR-015). global.browser.runtime.sendMessage
+ * is mocked per test. The DOM fallback path (h2 sibling) is also tested.
  *
  * Run with: npm test
  *           npx jest test/ocado
@@ -71,40 +71,40 @@ function fakeDocWithIngredientsH2(ingredientText) {
 }
 
 /**
- * Builds a mock fetch that returns a BOP API response with the given ingredient text.
+ * Builds a sendMessage mock that returns a successful BOP API response.
  *
  * @param {string} ingredientText
  * @returns {Function}
  */
-function mockFetchBop(ingredientText) {
+function mockSendMessageBop(ingredientText) {
   return jest.fn().mockResolvedValue({
-    ok: true,
-    json: async () => ({
+    success: true,
+    data: {
       bopData: {
         fields: [{ title: 'ingredients', content: ingredientText }],
       },
-    }),
+    },
   });
 }
 
 /**
- * Builds a mock fetch that simulates a BOP API failure (network error).
+ * Builds a sendMessage mock that simulates a service worker / network failure.
  *
  * @returns {Function}
  */
-function mockFetchBopFailure() {
-  return jest.fn().mockRejectedValue(new Error('Network error'));
+function mockSendMessageBopFailure() {
+  return jest.fn().mockRejectedValue(new Error('Extension error'));
 }
 
 /**
- * Builds a mock fetch that returns a BOP API response with no ingredients field.
+ * Builds a sendMessage mock that returns a BOP response with no ingredients field.
  *
  * @returns {Function}
  */
-function mockFetchBopNoIngredients() {
+function mockSendMessageBopNoIngredients() {
   return jest.fn().mockResolvedValue({
-    ok: true,
-    json: async () => ({ bopData: { fields: [{ title: 'nutritional_information', content: '...' }] } }),
+    success: true,
+    data: { bopData: { fields: [{ title: 'nutritional_information', content: '...' }] } },
   });
 }
 
@@ -126,7 +126,8 @@ beforeEach(() => {
 
 afterEach(() => {
   delete global.window;
-  delete global.fetch;
+  delete global.browser;
+  jest.clearAllMocks();
 });
 
 // ---------------------------------------------------------------------------
@@ -240,64 +241,65 @@ describe('extractBarcode', () => {
 // ---------------------------------------------------------------------------
 
 describe('extractIngredients', () => {
-  describe('BOP API (primary path)', () => {
-    it('returns ingredient text from BOP API when available', async () => {
-      global.fetch = mockFetchBop('Skimmed Milk, Sugar, Strawberry Flavouring');
+  describe('BOP API via service worker (primary path)', () => {
+    it('returns ingredient text from service worker BOP response', async () => {
+      global.browser = { runtime: { sendMessage: mockSendMessageBop('Skimmed Milk, Sugar, Strawberry Flavouring') } };
       const result = await adapter.extractIngredients(fakeDocEmpty());
       expect(result).toBe('Skimmed Milk, Sugar, Strawberry Flavouring');
     });
 
-    it('calls the BOP API with the correct retailerProductId', async () => {
-      global.fetch = mockFetchBop('Milk');
+    it('sends FETCH_OCADO_INGREDIENTS message with correct productId', async () => {
+      global.browser = { runtime: { sendMessage: mockSendMessageBop('Milk') } };
       await adapter.extractIngredients(fakeDocEmpty());
-      expect(global.fetch).toHaveBeenCalledWith(
-        expect.stringContaining('retailerProductId=12345678')
-      );
+      expect(global.browser.runtime.sendMessage).toHaveBeenCalledWith({
+        type: 'FETCH_OCADO_INGREDIENTS',
+        productId: '12345678',
+      });
     });
   });
 
-  describe('DOM fallback (when BOP API fails)', () => {
-    it('falls back to DOM h2+sibling when BOP API throws', async () => {
-      global.fetch = mockFetchBopFailure();
+  describe('DOM fallback (when service worker / BOP API fails)', () => {
+    it('falls back to DOM h2+sibling when sendMessage throws', async () => {
+      global.browser = { runtime: { sendMessage: mockSendMessageBopFailure() } };
       const doc = fakeDocWithIngredientsH2('Whole Milk, Cream');
       const result = await adapter.extractIngredients(doc);
       expect(result).toBe('Whole Milk, Cream');
     });
 
-    it('falls back to DOM when BOP API has no ingredients field', async () => {
-      global.fetch = mockFetchBopNoIngredients();
+    it('falls back to DOM when BOP response has no ingredients field', async () => {
+      global.browser = { runtime: { sendMessage: mockSendMessageBopNoIngredients() } };
       const doc = fakeDocWithIngredientsH2('Sunflower Oil');
       const result = await adapter.extractIngredients(doc);
       expect(result).toBe('Sunflower Oil');
     });
 
     it('returns null when DOM has no Ingredients h2', async () => {
-      global.fetch = mockFetchBopFailure();
+      global.browser = { runtime: { sendMessage: mockSendMessageBopFailure() } };
       const result = await adapter.extractIngredients(fakeDocEmpty());
       expect(result).toBeNull();
     });
 
     it('returns null when Ingredients h2 has no nextElementSibling', async () => {
-      global.fetch = mockFetchBopFailure();
+      global.browser = { runtime: { sendMessage: mockSendMessageBopFailure() } };
       const doc = fakeDocWithIngredientsH2(null);
       const result = await adapter.extractIngredients(doc);
       expect(result).toBeNull();
     });
   });
 
-  describe('No productId (BOP skipped entirely)', () => {
-    it('skips BOP API and uses DOM when pathname has no numeric ID', async () => {
+  describe('No productId (service worker message skipped entirely)', () => {
+    it('skips service worker and uses DOM when pathname has no numeric ID', async () => {
       global.window.location.pathname = '/browse/dairy';
-      global.fetch = jest.fn();
+      global.browser = { runtime: { sendMessage: jest.fn() } };
       const doc = fakeDocWithIngredientsH2('Oat Milk');
       const result = await adapter.extractIngredients(doc);
-      expect(global.fetch).not.toHaveBeenCalled();
+      expect(global.browser.runtime.sendMessage).not.toHaveBeenCalled();
       expect(result).toBe('Oat Milk');
     });
 
     it('returns null when pathname has no ID and DOM has no Ingredients h2', async () => {
       global.window.location.pathname = '/browse/dairy';
-      global.fetch = jest.fn();
+      global.browser = { runtime: { sendMessage: jest.fn() } };
       const result = await adapter.extractIngredients(fakeDocEmpty());
       expect(result).toBeNull();
     });
