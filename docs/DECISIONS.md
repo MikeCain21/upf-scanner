@@ -254,3 +254,34 @@ Reading from the existing cache in incognito is still permitted — a cache hit 
 - Compliant with Chrome's user privacy guidance on incognito mode
 - Classification still works in incognito (API calls proceed; per-tab session state still saves as it is cleared on tab close)
 - No performance impact for regular browsing; incognito sessions pay a small cost for repeated lookups of the same product across sessions
+
+
+---
+
+## ADR-014: Move ASDA Authenticated API Call to Service Worker
+
+**Date:** 2026-03-22
+**Status:** Accepted
+
+**Context:**
+Chrome's extension security guidelines recommend performing network requests in the service
+worker rather than content scripts. `content/sites/asda.js:_fetchProductData()` was making
+an authenticated request to ASDA's product API directly from the content script context.
+This was the only site adapter making API calls outside the service worker.
+
+**Options Considered:**
+1. Keep API call in content script — simple, but violates Chrome security guidelines
+2. Move cookie extraction + API call both to service worker — requires `cookies` API
+   permission, which is overly broad; HttpOnly cookies not accessible this way anyway
+3. Extract token in content script (same-origin access, no new permissions needed),
+   pass to service worker for the actual API call — minimal change, complies with guidelines
+
+**Decision:** Option 3. Content script extracts `SLAS.AUTH_TOKEN` from `document.cookie`
+(its legitimate same-origin access), passes it with the product ID via a `FETCH_ASDA_PRODUCT`
+message. Service worker makes the authenticated fetch via `background/asda-api.js`.
+
+**Consequences:**
+- ASDA product API now runs in service worker, consistent with OpenFoodFacts API pattern
+- No new permissions required
+- `background/asda-api.js` is independently testable via Jest (dual `typeof module` export pattern)
+- Incognito flag available in service worker handler for future cache-skip logic
