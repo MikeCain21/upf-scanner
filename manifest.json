@@ -28,7 +28,7 @@
   "content_scripts": [
     {
       "matches": [
-        "https://www.tesco.com/*"
+        "https://www.tesco.com/groceries/en-GB/products/*"
       ],
       "js": [
         "lib/browser-polyfill.js",
@@ -48,7 +48,7 @@
     },
     {
       "matches": [
-        "https://www.waitrose.com/*"
+        "https://www.waitrose.com/ecom/products/*"
       ],
       "js": [
         "lib/browser-polyfill.js",
@@ -68,7 +68,7 @@
     },
     {
       "matches": [
-        "https://www.sainsburys.co.uk/*"
+        "https://www.sainsburys.co.uk/gol-ui/product/*"
       ],
       "js": [
         "lib/browser-polyfill.js",
@@ -87,7 +87,7 @@
       "run_at": "document_idle"
     },
     {
-      "matches": ["https://www.asda.com/*"],
+      "matches": ["https://www.asda.com/groceries/product/*"],
       "js": [
         "lib/browser-polyfill.js",
         "content/sites/base-adapter.js",
@@ -103,7 +103,7 @@
       "run_at": "document_idle"
     },
     {
-      "matches": ["https://groceries.morrisons.com/*"],
+      "matches": ["https://groceries.morrisons.com/products/*"],
       "js": [
         "lib/browser-polyfill.js",
         "content/sites/base-adapter.js",
@@ -119,7 +119,7 @@
       "run_at": "document_idle"
     },
     {
-      "matches": ["https://www.ocado.com/*"],
+      "matches": ["https://www.ocado.com/products/*"],
       "js": [
         "lib/browser-polyfill.js",
         "content/sites/base-adapter.js",
