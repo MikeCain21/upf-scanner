@@ -580,7 +580,7 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
       sendResponse({ success: false, error: 'Missing sku' });
       return false;
     }
-    fetchSainsburysBarcodes(sku, message.cookieHeader ?? null)
+    fetchSainsburysBarcodes(sku)
       .then(data => sendResponse({ success: true, data }))
       .catch(() => sendResponse({ success: false, error: 'Sainsburys API error' }));
     return true; // async response

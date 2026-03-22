@@ -11,19 +11,12 @@ const SAINSBURYS_GOL_API_BASE =
  * Fetches EAN barcodes from the Sainsbury's Groceries Online (GOL) API.
  * Returns the parsed JSON response body ({ eans: [...] }), or null on failure.
  *
- * cookieHeader is accepted as an optional parameter to support session-authenticated
- * requests if the endpoint requires it. Pass undefined/null to make an unauthenticated
- * request (the default — sufficient for public product data endpoints).
- *
  * @param {string} sku - Sainsbury's internal product SKU from JSON-LD
- * @param {string|null} [cookieHeader] - Optional Cookie header value from content script
  * @returns {Promise<Object|null>} Parsed response body, or null on failure
  */
-async function fetchSainsburysBarcodes(sku, cookieHeader) {
+async function fetchSainsburysBarcodes(sku) {
   try {
-    const headers = cookieHeader ? { cookie: cookieHeader } : {};
-    const response = await fetch(`${SAINSBURYS_GOL_API_BASE}${sku}`, {
-      headers,
+    const response = await fetch(`${SAINSBURYS_GOL_API_BASE}${encodeURIComponent(String(sku))}`, {
       credentials: 'omit',
     });
     if (!response.ok) return null;

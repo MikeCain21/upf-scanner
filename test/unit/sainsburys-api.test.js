@@ -13,7 +13,7 @@ describe('fetchSainsburysBarcodes', () => {
     expect(result).toEqual(mockData);
   });
 
-  it('calls the correct Sainsburys GOL API URL', async () => {
+  it('calls the correct Sainsburys GOL API URL with encoded SKU', async () => {
     global.fetch.mockResolvedValueOnce({ ok: true, json: async () => ({}) });
     await fetchSainsburysBarcodes('2852652');
     expect(global.fetch).toHaveBeenCalledWith(
@@ -22,20 +22,20 @@ describe('fetchSainsburysBarcodes', () => {
     );
   });
 
-  it('includes Cookie header when cookieHeader is provided', async () => {
+  it('URL-encodes special characters in SKU', async () => {
     global.fetch.mockResolvedValueOnce({ ok: true, json: async () => ({}) });
-    await fetchSainsburysBarcodes('2852652', 'session=abc123');
+    await fetchSainsburysBarcodes('sku with spaces/slashes');
     expect(global.fetch).toHaveBeenCalledWith(
-      expect.any(String),
-      expect.objectContaining({ headers: { cookie: 'session=abc123' } })
+      `${SAINSBURYS_GOL_API_BASE}sku%20with%20spaces%2Fslashes`,
+      expect.objectContaining({ credentials: 'omit' })
     );
   });
 
-  it('omits Cookie header when cookieHeader is not provided', async () => {
+  it('does not include a Cookie header', async () => {
     global.fetch.mockResolvedValueOnce({ ok: true, json: async () => ({}) });
     await fetchSainsburysBarcodes('2852652');
     const [, options] = global.fetch.mock.calls[0];
-    expect(options.headers).toEqual({});
+    expect(options.headers).toBeUndefined();
   });
 
   it('returns null on non-ok response', async () => {
