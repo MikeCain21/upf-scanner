@@ -510,6 +510,9 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'SET_PAGE_NOVA') {
     const tabId = sender.tab.id;
     const { novaScore, productName, barcode, markers } = message;
+    if (DEBUG && typeof productName === 'string' && productName.length > 200) {
+      console.warn('[NOVA Background] SET_PAGE_NOVA: productName truncated to 200 chars');
+    }
     const state = { novaScore: novaScore || null, productName: (typeof productName === 'string' ? productName.slice(0, 200) : null) || null, barcode: barcode || null, markers: Array.isArray(markers) ? markers : [] };
     saveTabState(tabId, state).catch(() => {});
     updateBadge(tabId, novaScore || null);
