@@ -364,45 +364,51 @@ describe('_computeEan13', () => {
 
 describe('_fetchProductData', () => {
   beforeEach(() => {
-    global.document = { cookie: 'SLAS.AUTH_TOKEN=tok123' };
-    global.fetch = jest.fn();
+    global.document = { cookie: 'SLAS.AUTH_TOKEN=Bearer%20test-token; other=value' };
+    global.browser = { runtime: { sendMessage: jest.fn() } };
   });
 
   afterEach(() => {
     delete global.document;
-    delete global.fetch;
+    delete global.browser;
+    jest.clearAllMocks();
   });
 
-  it('returns parsed product JSON when API call succeeds', async () => {
-    const productData = { id: '9167536', upc: '028400090018' };
-    global.fetch.mockResolvedValue({ ok: true, json: async () => productData });
+  it('sends FETCH_ASDA_PRODUCT message with extracted token', async () => {
+    const mockData = { id: '9167536', upc: '028400090018' };
+    global.browser.runtime.sendMessage.mockResolvedValueOnce({ success: true, data: mockData });
     const result = await adapter._fetchProductData('9167536');
-    expect(result).toEqual(productData);
+    expect(global.browser.runtime.sendMessage).toHaveBeenCalledWith({
+      type: 'FETCH_ASDA_PRODUCT',
+      productId: '9167536',
+      token: 'Bearer test-token',
+    });
+    expect(result).toEqual(mockData);
   });
 
-  it('caches the result and avoids a second fetch for the same product ID', async () => {
-    const productData = { id: '9167536', upc: '028400090018' };
-    global.fetch.mockResolvedValue({ ok: true, json: async () => productData });
+  it('caches result to avoid duplicate messages', async () => {
+    const mockData = { id: '9167536', upc: '028400090018' };
+    global.browser.runtime.sendMessage.mockResolvedValue({ success: true, data: mockData });
     await adapter._fetchProductData('9167536');
     await adapter._fetchProductData('9167536');
-    expect(global.fetch).toHaveBeenCalledTimes(1);
+    expect(global.browser.runtime.sendMessage).toHaveBeenCalledTimes(1);
   });
 
   it('returns null when SLAS.AUTH_TOKEN cookie is absent', async () => {
     global.document.cookie = 'other_cookie=value';
     const result = await adapter._fetchProductData('9167536');
+    expect(global.browser.runtime.sendMessage).not.toHaveBeenCalled();
     expect(result).toBeNull();
-    expect(global.fetch).not.toHaveBeenCalled();
   });
 
-  it('returns null when API returns a non-ok response', async () => {
-    global.fetch.mockResolvedValue({ ok: false });
+  it('returns null when message returns success: false', async () => {
+    global.browser.runtime.sendMessage.mockResolvedValueOnce({ success: false, error: 'ASDA API error' });
     const result = await adapter._fetchProductData('9167536');
     expect(result).toBeNull();
   });
 
-  it('returns null when fetch throws a network error', async () => {
-    global.fetch.mockRejectedValue(new Error('network error'));
+  it('returns null on message send failure', async () => {
+    global.browser.runtime.sendMessage.mockRejectedValueOnce(new Error('Extension error'));
     const result = await adapter._fetchProductData('9167536');
     expect(result).toBeNull();
   });
@@ -415,22 +421,23 @@ describe('_fetchProductData', () => {
 describe('extractBarcodes', () => {
   beforeEach(() => {
     global.document = { cookie: 'SLAS.AUTH_TOKEN=tok123' };
-    global.fetch = jest.fn();
+    global.browser = { runtime: { sendMessage: jest.fn() } };
   });
 
   afterEach(() => {
     delete global.document;
-    delete global.fetch;
+    delete global.browser;
+    jest.clearAllMocks();
   });
 
   it('returns [upc, ean13] from the ASDA API when available', async () => {
-    global.fetch.mockResolvedValue({ ok: true, json: async () => ({ upc: '500032802875' }) });
+    global.browser.runtime.sendMessage.mockResolvedValue({ success: true, data: { upc: '500032802875' } });
     const result = await adapter.extractBarcodes(fakeDoc());
     expect(result).toEqual(['500032802875', '5000328028750']);
   });
 
   it('falls back to script#mobify-data EAN when API returns no upc field', async () => {
-    global.fetch.mockResolvedValue({ ok: true, json: async () => ({ name: 'Some product' }) });
+    global.browser.runtime.sendMessage.mockResolvedValue({ success: true, data: { name: 'Some product' } });
     const doc = fakeDocWithPreloadedState({ c_EAN_GTIN: '5449000601971' });
     const result = await adapter.extractBarcodes(doc);
     expect(result).toEqual(['5449000601971']);

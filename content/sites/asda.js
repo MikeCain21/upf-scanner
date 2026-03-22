@@ -262,21 +262,23 @@ class AsdaAdapter extends BaseAdapter {
   async _fetchProductData(productId) {
     if (this._productDataCache?.id === productId) return this._productDataCache.data;
 
-    try {
-      const tokenEntry = document.cookie.split(';')
-        .find(c => c.trim().startsWith('SLAS.AUTH_TOKEN='));
-      if (!tokenEntry) return null;
-      const token = decodeURIComponent(tokenEntry.trim().slice('SLAS.AUTH_TOKEN='.length));
+    // Extract token from same-origin cookie — must happen here, not in service worker.
+    // The actual API call is delegated to the service worker per Chrome security
+    // guidelines (ADR-014).
+    const tokenEntry = document.cookie.split(';')
+      .find(c => c.trim().startsWith('SLAS.AUTH_TOKEN='));
+    if (!tokenEntry) return null;
+    const token = decodeURIComponent(tokenEntry.trim().slice('SLAS.AUTH_TOKEN='.length));
 
-      const url = `https://www.asda.com/mobify/proxy/ghs-api/product/shopper-products/v1/organizations/f_ecom_bjgs_prd/products/${productId}?siteId=ASDA_GROCERIES&allImages=true&c_isPDP=true`;
-      const res = await fetch(url, {
-        headers: { authorization: token, 'content-type': 'application/json' },
-        credentials: 'include',
+    try {
+      const response = await browser.runtime.sendMessage({
+        type: 'FETCH_ASDA_PRODUCT',
+        productId,
+        token,
       });
-      if (!res.ok) return null;
-      const data = await res.json();
-      this._productDataCache = { id: productId, data };
-      return data;
+      if (!response?.success) return null;
+      this._productDataCache = { id: productId, data: response.data };
+      return response.data;
     } catch {
       return null;
     }
