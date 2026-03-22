@@ -21,6 +21,7 @@
 // Load browser polyfill first — maps browser.* → chrome.* on Chrome/Edge;
 // no-op on Firefox where browser.* is native.
 importScripts('../lib/browser-polyfill.js');
+importScripts('asda-api.js');
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -549,6 +550,26 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
       .catch(err => sendResponse({ success: false, error: err.message }));
 
     return true; // Keeps the message channel open for the async response
+  }
+
+  if (message.type === 'FETCH_ASDA_PRODUCT') {
+    const { productId, token } = message;
+    if (!productId || !token) {
+      sendResponse({ success: false, error: 'Missing productId or token' });
+      return false;
+    }
+    const isIncognito = sender.tab?.incognito ?? false;
+    fetchAsdaProduct(productId, token)
+      .then(data => {
+        if (DEBUG && isIncognito) {
+          console.log('[NOVA Background] ASDA API call in incognito — result not cached');
+        }
+        sendResponse({ success: true, data, isIncognito });
+      })
+      .catch(() => {
+        sendResponse({ success: false, error: 'ASDA API error' });
+      });
+    return true; // async response
   }
 
   sendResponse({ success: false, error: 'Unknown message type' });
