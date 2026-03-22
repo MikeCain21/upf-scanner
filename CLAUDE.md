@@ -1,6 +1,6 @@
 # CLAUDE.md - Development Guide for Claude
 
-**Last Updated:** 2026-03-21
+**Last Updated:** 2026-03-22
 **Version:** 1.2.1
 
 > **About this file:** This project uses [Claude Code](https://claude.ai/claude-code) for AI-assisted development. This file is the primary instruction document that Claude reads at the start of every session to understand the project's architecture, principles, and conventions. It is intentionally committed to the repo for transparency.
@@ -481,6 +481,7 @@ const novaScore = product.nova_groups_tags?.[0] || product.nova_group;
 - **Service workers replace background pages** (Manifest V3) — they can be terminated when idle; use `chrome.storage` for persistence, never in-memory variables
 - **Use MutationObserver** for detecting new products on infinite scroll / SPAs
 - **Debounce scroll handlers** and use `requestIdleCallback` for non-urgent classification work
+- **Incognito mode** — Never write to `chrome.storage.local` when `sender.tab.incognito` is true; reading from cache is permitted. Classification still works in incognito (API calls proceed). See ADR-013.
 
 ---
 

@@ -232,3 +232,25 @@
 **Consequences:**
 - Improved coverage for chocolate, bread, and processed meat products in the fallback path
 - The indicator set remains an approximation; the OFF API result takes precedence whenever available
+
+
+---
+
+## ADR-013: Incognito Mode — Skip Persistent Cache Writes
+
+**Status:** Accepted | **Date:** 2026-03-22
+
+**Context:** Chrome's extension privacy best practices require that extensions "not save browsing history from private windows." When a user browses a supermarket product page in incognito, the extension was writing barcode lookups and ingredient hashes to `chrome.storage.local` with a 7-day TTL. This created a persistent record of which products the user viewed in a private session.
+
+**Decision:** Detect `sender.tab.incognito` in the service worker message handler and pass `isIncognito` into `lookupProduct()` and `analyzeIngredients()`. Both functions skip all `setCached()` writes when `isIncognito` is true.
+
+Reading from the existing cache in incognito is still permitted — a cache hit reveals nothing about the current incognito session (only that the same product was looked up at some prior point in regular browsing).
+
+**Why not skip caching entirely (reads too)?** Blocking cache reads in incognito would add unnecessary API calls and latency. The cached data (barcode → NOVA score) is not personally identifiable; only the *act of writing* from an incognito session would reveal private browsing behaviour.
+
+**Why not use `activeTab` instead of `host_permissions`?** `activeTab` only grants access when the user explicitly invokes the extension (toolbar click). Our extension injects content scripts passively on page load, so `host_permissions` are required and correct.
+
+**Consequences:**
+- Compliant with Chrome's user privacy guidance on incognito mode
+- Classification still works in incognito (API calls proceed; per-tab session state still saves as it is cleared on tab close)
+- No performance impact for regular browsing; incognito sessions pay a small cost for repeated lookups of the same product across sessions
