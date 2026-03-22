@@ -474,7 +474,7 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
   // ---------------------------------------------------------------------------
 
   if (message.type === 'GET_PAGE_NOVA') {
-    if (message.tabId) {
+    if (Number.isInteger(message.tabId) && message.tabId > 0) {
       loadTabState(message.tabId)
         .then(state => sendResponse(state || { novaScore: null, productName: null, barcode: null }))
         .catch(() => sendResponse({ novaScore: null, productName: null, barcode: null }));
@@ -510,7 +510,7 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'SET_PAGE_NOVA') {
     const tabId = sender.tab.id;
     const { novaScore, productName, barcode, markers } = message;
-    const state = { novaScore: novaScore || null, productName: productName || null, barcode: barcode || null, markers: Array.isArray(markers) ? markers : [] };
+    const state = { novaScore: novaScore || null, productName: (typeof productName === 'string' ? productName.slice(0, 200) : null) || null, barcode: barcode || null, markers: Array.isArray(markers) ? markers : [] };
     saveTabState(tabId, state).catch(() => {});
     updateBadge(tabId, novaScore || null);
     sendResponse({ success: true });
