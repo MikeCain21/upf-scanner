@@ -592,7 +592,7 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
       sendResponse({ success: false, error: 'Missing productId' });
       return false;
     }
-    fetchOcadoIngredients(productId, message.cookieHeader ?? null)
+    fetchOcadoIngredients(productId)
       .then(data => sendResponse({ success: true, data }))
       .catch(() => sendResponse({ success: false, error: 'Ocado API error' }));
     return true; // async response

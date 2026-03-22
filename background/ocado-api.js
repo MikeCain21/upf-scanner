@@ -11,19 +11,13 @@ const OCADO_BOP_API_BASE =
  * Fetches product data from the Ocado BOP API for the given retailerProductId.
  * Returns the parsed JSON response body ({ bopData: { fields: [...] } }), or null on failure.
  *
- * cookieHeader is accepted as an optional parameter to support session-authenticated
- * requests if the endpoint requires it. Pass undefined/null to make an unauthenticated
- * request (the default — sufficient for public product data endpoints).
- *
  * @param {string} productId - Ocado retailerProductId from the PDP URL
- * @param {string|null} [cookieHeader] - Optional Cookie header value from content script
  * @returns {Promise<Object|null>} Parsed response body, or null on failure
  */
-async function fetchOcadoIngredients(productId, cookieHeader) {
+async function fetchOcadoIngredients(productId) {
   try {
-    const headers = cookieHeader ? { cookie: cookieHeader } : {};
-    const response = await fetch(`${OCADO_BOP_API_BASE}?retailerProductId=${productId}`, {
-      headers,
+    const params = new URLSearchParams({ retailerProductId: String(productId) });
+    const response = await fetch(`${OCADO_BOP_API_BASE}?${params}`, {
       credentials: 'omit',
     });
     if (!response.ok) return null;

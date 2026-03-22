@@ -22,20 +22,11 @@ describe('fetchOcadoIngredients', () => {
     );
   });
 
-  it('includes Cookie header when cookieHeader is provided', async () => {
-    global.fetch.mockResolvedValueOnce({ ok: true, json: async () => ({}) });
-    await fetchOcadoIngredients('12345678', 'session=xyz789');
-    expect(global.fetch).toHaveBeenCalledWith(
-      expect.any(String),
-      expect.objectContaining({ headers: { cookie: 'session=xyz789' } })
-    );
-  });
-
-  it('omits Cookie header when cookieHeader is not provided', async () => {
+  it('does not include a headers property in the fetch options', async () => {
     global.fetch.mockResolvedValueOnce({ ok: true, json: async () => ({}) });
     await fetchOcadoIngredients('12345678');
     const [, options] = global.fetch.mock.calls[0];
-    expect(options.headers).toEqual({});
+    expect(options.headers).toBeUndefined();
   });
 
   it('returns null on non-ok response', async () => {
