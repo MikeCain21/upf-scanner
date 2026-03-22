@@ -1,0 +1,96 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="560" viewBox="0 0 1400 560">
+  <defs>
+    <radialGradient id="bgGlow" cx="28%" cy="50%" r="55%">
+      <stop offset="0%" stop-color="#1a3a24"/>
+      <stop offset="100%" stop-color="#0d1117"/>
+    </radialGradient>
+    <radialGradient id="iconGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#28a745" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#28a745" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="iconShadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="6" stdDeviation="18" flood-color="#000000" flood-opacity="0.55"/>
+    </filter>
+    <filter id="textGlow" x="-5%" y="-20%" width="110%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="8" flood-color="#28a745" flood-opacity="0.4"/>
+    </filter>
+
+    <!-- Diagonal separator between left and right zones -->
+    <clipPath id="rightClip">
+      <polygon points="560,0 1400,0 1400,560 480,560"/>
+    </clipPath>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1400" height="560" fill="url(#bgGlow)"/>
+
+  <!-- Subtle right-zone overlay for depth -->
+  <rect width="1400" height="560" fill="#0d1117" fill-opacity="0.3" clip-path="url(#rightClip)"/>
+
+  <!-- Diagonal accent line -->
+  <line x1="530" y1="0" x2="450" y2="560" stroke="#28a745" stroke-width="1.5" stroke-opacity="0.3"/>
+
+  <!-- Glow halo behind icon -->
+  <ellipse cx="280" cy="248" rx="200" ry="185" fill="url(#iconGlow)"/>
+
+  <!-- Icon: green rounded square, 240x240 -->
+  <rect x="160" y="128" width="240" height="240" rx="46" ry="46" fill="#28a745" filter="url(#iconShadow)"/>
+
+  <!-- "U" lettermark in icon -->
+  <text
+    x="280"
+    y="248"
+    font-family="Arial Black, Arial, sans-serif"
+    font-size="182"
+    font-weight="800"
+    text-anchor="middle"
+    dominant-baseline="central"
+    fill="white"
+  >U</text>
+
+  <!-- Wordmark -->
+  <text
+    x="580"
+    y="218"
+    font-family="Arial Black, Arial, sans-serif"
+    font-size="96"
+    font-weight="800"
+    fill="white"
+    filter="url(#textGlow)"
+    letter-spacing="-1"
+  >UPF Scanner</text>
+
+  <!-- Tagline -->
+  <text
+    x="582"
+    y="292"
+    font-family="Arial, sans-serif"
+    font-size="30"
+    font-weight="400"
+    fill="rgba(255,255,255,0.72)"
+    letter-spacing="0.5"
+  >Know what's really in your food.</text>
+
+  <!-- NOVA pill badges — decorative, right side -->
+  <!-- NOVA 1 -->
+  <rect x="582" y="340" width="136" height="48" rx="24" fill="#28a745" fill-opacity="0.9"/>
+  <text x="650" y="364" font-family="Arial Black, Arial, sans-serif" font-size="18" font-weight="800" text-anchor="middle" dominant-baseline="central" fill="white">NOVA 1</text>
+
+  <!-- NOVA 2 -->
+  <rect x="732" y="340" width="136" height="48" rx="24" fill="#ffc107" fill-opacity="0.9"/>
+  <text x="800" y="364" font-family="Arial Black, Arial, sans-serif" font-size="18" font-weight="800" text-anchor="middle" dominant-baseline="central" fill="white">NOVA 2</text>
+
+  <!-- NOVA 3 -->
+  <rect x="882" y="340" width="136" height="48" rx="24" fill="#fd7e14" fill-opacity="0.9"/>
+  <text x="950" y="364" font-family="Arial Black, Arial, sans-serif" font-size="18" font-weight="800" text-anchor="middle" dominant-baseline="central" fill="white">NOVA 3</text>
+
+  <!-- NOVA 4 -->
+  <rect x="1032" y="340" width="136" height="48" rx="24" fill="#dc3545" fill-opacity="0.9"/>
+  <text x="1100" y="364" font-family="Arial Black, Arial, sans-serif" font-size="18" font-weight="800" text-anchor="middle" dominant-baseline="central" fill="white">NOVA 4</text>
+
+  <!-- NOVA 4-colour bottom bar -->
+  <rect x="0"   y="508" width="350" height="52" fill="#28a745"/>
+  <rect x="350" y="508" width="350" height="52" fill="#ffc107"/>
+  <rect x="700" y="508" width="350" height="52" fill="#fd7e14"/>
+  <rect x="1050" y="508" width="350" height="52" fill="#dc3545"/>
+</svg>
