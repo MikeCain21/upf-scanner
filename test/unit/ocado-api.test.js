@@ -22,6 +22,15 @@ describe('fetchOcadoIngredients', () => {
     );
   });
 
+  it('URL-encodes special characters in productId', async () => {
+    global.fetch.mockResolvedValueOnce({ ok: true, json: async () => ({}) });
+    await fetchOcadoIngredients('product id/special');
+    expect(global.fetch).toHaveBeenCalledWith(
+      `${OCADO_BOP_API_BASE}?retailerProductId=product+id%2Fspecial`,
+      expect.objectContaining({ credentials: 'omit' })
+    );
+  });
+
   it('does not include a headers property in the fetch options', async () => {
     global.fetch.mockResolvedValueOnce({ ok: true, json: async () => ({}) });
     await fetchOcadoIngredients('12345678');
