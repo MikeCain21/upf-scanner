@@ -21,6 +21,7 @@
 // Load browser polyfill first — maps browser.* → chrome.* on Chrome/Edge;
 // no-op on Firefox where browser.* is native.
 importScripts('../lib/browser-polyfill.js');
+importScripts('../lib/storage-crypto.js');
 importScripts('asda-api.js');
 importScripts('sainsburys-api.js');
 importScripts('ocado-api.js');
@@ -256,7 +257,13 @@ async function getCached(barcode) {
     const result = await browser.storage.local.get(key);
     if (!result[key]) return null;
 
-    const cached = result[key];
+    const cached = await StorageCrypto.decryptValue(result[key]);
+    if (!cached) {
+      // Legacy unencrypted entry — remove and treat as miss.
+      await browser.storage.local.remove(key);
+      return null;
+    }
+
     if (Date.now() - cached.timestamp > CACHE_TTL_MS) {
       // Entry expired — remove and treat as miss
       await browser.storage.local.remove(key);
@@ -281,7 +288,8 @@ async function getCached(barcode) {
 async function setCached(barcode, entry) {
   const key = CACHE_PREFIX + barcode;
   try {
-    await browser.storage.local.set({ [key]: { ...entry, timestamp: Date.now() } });
+    const encrypted = await StorageCrypto.encryptValue({ ...entry, timestamp: Date.now() });
+    await browser.storage.local.set({ [key]: encrypted });
     if (DEBUG) console.log(`[NOVA Cache] Stored ${barcode}`);
   } catch (err) {
     if (DEBUG) console.warn('[NOVA Cache] Write error:', err.message);
