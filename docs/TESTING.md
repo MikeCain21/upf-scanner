@@ -20,8 +20,8 @@ PASS test/unit/nova-classifier.test.js
 PASS test/unit/nova-indicators.test.js
 ...
 
-Tests: 385+ passed
-Time: ~2s
+Tests: 346 passed
+Time: ~1s
 ```
 
 All tests should be green. If any fail, see [If a test fails](#if-a-test-fails) in `docs/DEVELOPMENT.md`.
@@ -30,6 +30,7 @@ All tests should be green. If any fail, see [If a test fails](#if-a-test-fails) 
 ```
 npm run test:watch     # Re-runs on file save (use while editing)
 npm run test:verbose   # Shows every individual test name
+npm run test:coverage  # Runs tests and shows per-file coverage report
 ```
 
 ---
@@ -120,13 +121,15 @@ Use manual extension testing for final verification before marking a phase compl
 - `test/unit/asda-adapter.test.js` — unit tests for ASDA adapter
 - `test/unit/morrisons-adapter.test.js` — unit tests for Morrisons adapter
 - `test/unit/waitrose-adapter.test.js` — unit tests for Waitrose adapter
+- `test/unit/ocado-adapter.test.js` — unit tests for Ocado adapter
 - `test/connectivity/openfoodfacts-connectivity.test.js` — live connectivity tests (requires network)
 
 **Commands:**
 ```bash
-npm test              # Run once
-npm run test:watch    # Re-run on every file save
-npm run test:verbose  # Show every individual test name
+npm test                   # Run once
+npm run test:watch         # Re-run on every file save
+npm run test:verbose       # Show every individual test name
+npm run test:coverage      # Run with per-file coverage report
 ```
 
 **When to use:**

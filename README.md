@@ -231,8 +231,11 @@ upf-scanner/
 
 **Running Tests:**
 ```bash
-npm test            # All unit tests (346 tests)
-npm run test:watch  # Watch mode
+npm test                  # All unit tests (346 tests)
+npm run test:watch        # Watch mode
+npm run test:coverage     # Tests + per-file coverage report
+npm run lint              # ESLint
+npm run format            # Prettier (auto-format source files)
 ```
 
 ### Technology Stack

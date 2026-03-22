@@ -25,10 +25,13 @@ Load the extension in Chrome:
 ```bash
 npm test                    # All unit tests (fast, no network)
 npm run test:watch          # Watch mode during development
+npm run test:coverage       # Tests + per-file coverage report
 npm run test:connectivity   # Live OpenFoodFacts API tests (requires network)
+npm run lint                # ESLint — must pass before submitting a PR
+npm run format              # Prettier — auto-format source files
 ```
 
-All unit tests must pass before submitting a PR. Connectivity tests are informational only.
+All unit tests and lint must pass before submitting a PR. Connectivity tests are informational only.
 
 ---
 

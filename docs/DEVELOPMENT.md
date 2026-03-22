@@ -190,11 +190,19 @@ npm run test:verbose
 
 Same as `npm test` but prints every individual test name, not just the group names. Use this when a failure message is unclear and you want to see exactly which tests are passing and which are not.
 
+### Coverage report
+
+```
+npm run test:coverage
+```
+
+Runs all tests and prints a per-file statement/branch/function/line coverage table. Useful for spotting untested code paths before submitting a PR.
+
 ---
 
 ## What the tests check
 
-There are 10 test files. Run `npm test` to execute all of them.
+There are 11 test files. Run `npm test` to execute all of them.
 
 | Test file | What it covers |
 |-----------|---------------|
@@ -208,6 +216,7 @@ There are 10 test files. Run `npm test` to execute all of them.
 | `asda-adapter.test.js` | Asda-specific extraction — URL detection, ingredient parsing |
 | `waitrose-adapter.test.js` | Waitrose-specific extraction — URL detection, ingredient parsing |
 | `morrisons-adapter.test.js` | Morrisons-specific extraction — URL detection, ingredient parsing |
+| `ocado-adapter.test.js` | Ocado-specific extraction — URL detection, ingredient parsing |
 
 **`ingredient-parser.test.js` in detail** (22 tests):
 

@@ -10,7 +10,10 @@
   },
   "extends": ["eslint:recommended"],
   "rules": {
-    "no-var": "error"
+    "no-var": "error",
+    "prefer-const": "error",
+    "eqeqeq": "error",
+    "no-unused-vars": "warn"
   },
   "overrides": [
     {

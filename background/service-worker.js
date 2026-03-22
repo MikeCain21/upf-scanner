@@ -485,7 +485,7 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   const senderOrigin = sender.origin || new URL(sender.tab?.url || 'about:blank').origin;
   if (!sender.tab || !ALLOWED_ORIGINS.some(o => senderOrigin.startsWith(o))) {
-    console.warn('[NOVA Background] Rejected message from unexpected sender:', senderOrigin);
+    console.warn('[NOVA Background] Rejected message from unexpected sender:', senderOrigin); // Always log: security-relevant rejection, not debug noise
     sendResponse({ success: false, error: 'Unauthorized sender' });
     return false;
   }
@@ -510,7 +510,7 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
     lookupProduct(barcode)
       .then(result => sendResponse({ success: true, ...result }))
       .catch(err => {
-        console.error('[NOVA Background] Unexpected error:', err);
+        console.error('[NOVA Background] Unexpected error:', err); // Always log: unexpected errors should surface in production
         sendResponse({ success: false, error: err.message });
       });
 

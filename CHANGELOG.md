@@ -13,11 +13,18 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - ESLint (`eslint:recommended` + `no-var`) with CI enforcement — `npm run lint`
 - Unit tests for Ocado adapter (`test/unit/ocado-adapter.test.js`) — 346 tests total
 - `DEBUG` flag in service worker — verbose logging is now opt-in (set `DEBUG = true` to re-enable)
+- Prettier code formatter — `npm run format` (`.prettierrc` config: single quotes, 2-space, trailing commas)
+- `.editorconfig` — consistent indentation and line endings across editors
+- `.nvmrc` — pins Node.js 18 for `nvm use` / `fnm use`
+- `npm run test:coverage` — generates per-file coverage report (configured in `jest.config.js`)
+- Three additional ESLint rules: `prefer-const`, `eqeqeq`, `no-unused-vars`
 
 ### Changed
 - Test directory reorganised into `unit/`, `connectivity/`, and `manual/` subdirectories
 - Icon generation script moved from `icons/` to `scripts/`
 - LICENSE updated to reflect current project name (UPF Scanner)
+- Fixed stale JSDoc on feedback form constants in `content/ui/badge.js`
+- Fixed `test:connectivity` script path to match reorganised test directory
 
 ### Fixed
 - Duplicate JSDoc block removed from `popup/popup.js`
