@@ -434,44 +434,82 @@
 
   /**
    * Initialises the extension.
-   * Loads debug preference and extensionEnabled from storage before first MutationObserver fire.
+   * In incognito windows, defaults to off — requires explicit session opt-in.
+   * In normal windows, reads extensionEnabled from local storage (default: enabled).
    */
   function init() {
     const adapter = findAdapter();
     if (!adapter) return;
 
-    // Merge debugMode and extensionEnabled into a single storage read to avoid two round-trips.
-    browser.storage.local.get({ debugMode: false, extensionEnabled: true }).then((data) => {
-      if (data.debugMode !== undefined) CONFIG.DEBUG = !!data.debugMode;
-      _enabled = data.extensionEnabled !== false; // default true if key not yet set
+    const isIncognito = chrome.extension.inIncognitoContext;
 
-      // Register the toggle listener HERE — after _enabled is set from storage —
-      // so a storage change that fires while the initial get() is still pending
-      // cannot be overwritten by the get() callback (race condition prevention).
-      chrome.storage.onChanged.addListener((changes, area) => {
-        if (area === 'local' && 'extensionEnabled' in changes) {
-          _enabled = !!changes.extensionEnabled.newValue;
-          if (!_enabled) disableOnPage();
-        }
+    if (isIncognito) {
+      // Default off in incognito — check for explicit session opt-in.
+      // chrome.storage.session is auto-cleared when the incognito window closes.
+      browser.storage.session.get({ incognitoSessionEnabled: false }).then((data) => {
+        _enabled = !!data.incognitoSessionEnabled;
+
+        // Register session storage listener after _enabled is set (avoids race).
+        chrome.storage.onChanged.addListener((changes, area) => {
+          if (area === 'session' && 'incognitoSessionEnabled' in changes) {
+            _enabled = !!changes.incognitoSessionEnabled.newValue;
+            if (!_enabled) {
+              disableOnPage();
+            } else {
+              startDetection(adapter);
+            }
+          }
+        });
+
+        if (!_enabled) return; // paused by default in incognito
+
+        browser.storage.local.get({ debugMode: false }).then((localData) => {
+          if (localData.debugMode !== undefined) CONFIG.DEBUG = !!localData.debugMode;
+          log(`Extension loaded (incognito session) — Version ${CONFIG.VERSION}`);
+          log(`Using adapter: ${adapter.SITE_ID}`);
+          startDetection(adapter);
+        });
       });
+    } else {
+      // Normal window — read extensionEnabled and debugMode in one call.
+      browser.storage.local.get({ debugMode: false, extensionEnabled: true }).then((data) => {
+        if (data.debugMode !== undefined) CONFIG.DEBUG = !!data.debugMode;
+        _enabled = data.extensionEnabled !== false;
 
-      if (!_enabled) return; // extension is paused — do nothing on this page
+        // Register listener after _enabled is set (avoids race).
+        chrome.storage.onChanged.addListener((changes, area) => {
+          if (area === 'local' && 'extensionEnabled' in changes) {
+            _enabled = !!changes.extensionEnabled.newValue;
+            if (!_enabled) disableOnPage();
+          }
+        });
 
-      log(`Extension loaded — Version ${CONFIG.VERSION}`);
-      log(`Using adapter: ${adapter.SITE_ID}`);
+        if (!_enabled) return;
 
-      const run = () => {
-        detectAndBadge(adapter);
-        setupSpaNavigation(adapter);
-        setupMutationObserver(adapter);
-      };
+        log(`Extension loaded — Version ${CONFIG.VERSION}`);
+        log(`Using adapter: ${adapter.SITE_ID}`);
+        startDetection(adapter);
+      });
+    }
+  }
 
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', run);
-      } else {
-        run();
-      }
-    });
+  /**
+   * Starts badge detection and sets up SPA and mutation observers.
+   * Extracted so both normal and incognito paths share the same startup sequence.
+   * @param {object} adapter
+   */
+  function startDetection(adapter) {
+    const run = () => {
+      detectAndBadge(adapter);
+      setupSpaNavigation(adapter);
+      setupMutationObserver(adapter);
+    };
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', run);
+    } else {
+      run();
+    }
   }
 
   init();

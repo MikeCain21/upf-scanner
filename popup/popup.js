@@ -34,6 +34,8 @@
   const debugModeCheckbox = document.getElementById('debugMode');
   const enableToggle = document.getElementById('enableToggle');
   const pausedNotice = document.getElementById('paused-notice');
+  const incognitoPanel = document.getElementById('incognito-panel');
+  const incognitoSessionBtn = document.getElementById('incognito-session-btn');
 
   // ---------------------------------------------------------------------------
   // Product score section
@@ -144,6 +146,46 @@
   });
 
   // ---------------------------------------------------------------------------
+  // Incognito session toggle
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Detects whether the popup is open in an incognito context and renders
+   * the appropriate UI. In incognito, hides the global toggle and shows the
+   * incognito panel with session opt-in/opt-out instead.
+   */
+  function initIncognitoUI() {
+    if (!chrome.extension.inIncognitoContext) return;
+
+    // Hide the global toggle — it controls normal-window state, not incognito sessions.
+    enableToggle.closest('label.power-toggle').style.display = 'none';
+    pausedNotice.style.display = 'none';
+
+    chrome.storage.session.get({ incognitoSessionEnabled: false }, (data) => {
+      const sessionEnabled = !!data.incognitoSessionEnabled;
+      if (sessionEnabled) {
+        incognitoSessionBtn.textContent = 'Disable for this session';
+        incognitoSessionBtn.style.backgroundColor = '#dc3545';
+      }
+      incognitoPanel.style.display = 'block';
+    });
+
+    incognitoSessionBtn.addEventListener('click', () => {
+      chrome.storage.session.get({ incognitoSessionEnabled: false }, (data) => {
+        const next = !data.incognitoSessionEnabled;
+        chrome.storage.session.set({ incognitoSessionEnabled: next });
+        if (next) {
+          incognitoSessionBtn.textContent = 'Disable for this session';
+          incognitoSessionBtn.style.backgroundColor = '#dc3545';
+        } else {
+          incognitoSessionBtn.textContent = 'Enable for this session';
+          incognitoSessionBtn.style.backgroundColor = '';
+        }
+      });
+    });
+  }
+
+  // ---------------------------------------------------------------------------
   // Clear cache
   // ---------------------------------------------------------------------------
 
@@ -177,4 +219,5 @@
   loadPageNova();
   loadDebugMode();
   loadEnableState();
+  initIncognitoUI();
 })();

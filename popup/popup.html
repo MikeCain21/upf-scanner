@@ -252,6 +252,40 @@
       margin-bottom: 14px;
       line-height: 1.5;
     }
+
+    /* Incognito state panel */
+    #incognito-panel {
+      display: none;
+      background: #f3f0f8;
+      border: 1px solid #c8b8e8;
+      border-radius: 6px;
+      padding: 12px;
+      margin-bottom: 14px;
+      font-size: 12px;
+      color: #444;
+      line-height: 1.5;
+    }
+
+    #incognito-panel p {
+      margin-bottom: 8px;
+    }
+
+    #incognito-session-btn {
+      width: 100%;
+      padding: 7px;
+      background-color: #6f42c1;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+
+    #incognito-session-btn:hover {
+      background-color: #59329d;
+    }
   </style>
 </head>
 <body>
@@ -263,6 +297,10 @@
     </label>
   </header>
   <div id="paused-notice">Extension paused — no badges or API calls on this tab.</div>
+  <div id="incognito-panel">
+    <p>The extension is paused in incognito mode to protect your privacy.</p>
+    <button id="incognito-session-btn">Enable for this session</button>
+  </div>
   <main>
     <section id="product-section" aria-label="Product NOVA score" aria-live="polite" aria-atomic="true">
       <div class="product-row">
