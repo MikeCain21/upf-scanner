@@ -48,7 +48,7 @@
   // ---------------------------------------------------------------------------
 
   /** Base URL of the Google Form used to report incorrect NOVA scores */
-  const FEEDBACK_FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSfLyPGeoQGEb3Z65Nbl46pGXPBHTbrqsugNbiQXe8kHbaxemg/viewform?usp=dialog';
+  const FEEDBACK_FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSfLyPGeoQGEb3Z65Nbl46pGXPBHTbrqsugNbiQXe8kHbaxemg/viewform';
 
   /** Google Form pre-fill entry ID for the "Product URL" field */
   const FEEDBACK_ENTRY_URL = 'entry.1319413182';
