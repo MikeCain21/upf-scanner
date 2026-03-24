@@ -1,7 +1,7 @@
 # Architecture Decision Records
 
 **Project:** UPF Scanner
-**Last Updated:** 2026-03-22
+**Last Updated:** 2026-03-24
 
 > This document records non-obvious architectural and technical decisions. Straightforward choices (platform, framework, caching mechanism) are omitted — the code itself is sufficient documentation for those.
 
@@ -21,6 +21,10 @@
 - [ADR-010: Extend NOVA3_PROCESSING_RE with Food Additive Category Names](#adr-010-extend-nova3_processing_re-with-food-additive-category-names)
 - [ADR-011: Ocado — BOP API for Ingredient Extraction](#adr-011-ocado--bop-api-for-ingredient-extraction)
 - [ADR-012: Align Local Indicator Set with OpenFoodFacts Taxonomy](#adr-012-align-local-indicator-set-with-openfoodfacts-taxonomy)
+- [ADR-013: Incognito Mode — Skip Persistent Cache Writes](#adr-013-incognito-mode--skip-persistent-cache-writes)
+- [ADR-014: Move ASDA Authenticated API Call to Service Worker](#adr-014-move-asda-authenticated-api-call-to-service-worker)
+- [ADR-015: Delegate Sainsbury's and Ocado API Calls to Service Worker](#adr-015-delegate-sainsburys-and-ocado-api-calls-to-service-worker)
+- [ADR-016: AES-256-GCM Encryption for Local Cache](#adr-016-aes-256-gcm-encryption-for-local-cache)
 
 ---
 
@@ -330,7 +334,7 @@ requests if the endpoints require it in future; omitted by default.
 
 ---
 
-## ADR-015: AES-256-GCM encryption for local cache
+## ADR-016: AES-256-GCM encryption for local cache
 **Date:** 2026-03-22
 **Status:** Accepted
 
