@@ -32,6 +32,8 @@
   const clearCacheButton = document.getElementById('clearCache');
   const cacheStatusEl = document.getElementById('cache-status');
   const debugModeCheckbox = document.getElementById('debugMode');
+  const enableToggle = document.getElementById('enableToggle');
+  const pausedNotice = document.getElementById('paused-notice');
 
   // ---------------------------------------------------------------------------
   // Product score section
@@ -121,6 +123,27 @@
   });
 
   // ---------------------------------------------------------------------------
+  // Enable/disable toggle
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Loads the saved extensionEnabled preference and reflects it in the toggle.
+   */
+  function loadEnableState() {
+    chrome.storage.local.get({ extensionEnabled: true }, (data) => {
+      const enabled = data.extensionEnabled !== false;
+      enableToggle.checked = enabled;
+      pausedNotice.style.display = enabled ? 'none' : 'block';
+    });
+  }
+
+  enableToggle.addEventListener('change', () => {
+    const enabled = enableToggle.checked;
+    chrome.storage.local.set({ extensionEnabled: enabled });
+    pausedNotice.style.display = enabled ? 'none' : 'block';
+  });
+
+  // ---------------------------------------------------------------------------
   // Clear cache
   // ---------------------------------------------------------------------------
 
@@ -153,4 +176,5 @@
 
   loadPageNova();
   loadDebugMode();
+  loadEnableState();
 })();

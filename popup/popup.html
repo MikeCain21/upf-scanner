@@ -175,10 +175,94 @@
     }
 
     .sr-only { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; }
+
+    /* Enable/disable toggle */
+    .toggle-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #e0e0e0;
+    }
+
+    .toggle-header h1 {
+      margin-bottom: 0;
+      padding-bottom: 0;
+      border-bottom: none;
+    }
+
+    .power-toggle {
+      position: relative;
+      display: inline-block;
+      width: 40px;
+      height: 22px;
+      flex-shrink: 0;
+    }
+
+    .power-toggle input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+      position: absolute;
+    }
+
+    .power-slider {
+      position: absolute;
+      cursor: pointer;
+      inset: 0;
+      background-color: #ccc;
+      border-radius: 22px;
+      transition: background-color 0.2s;
+    }
+
+    .power-slider::before {
+      content: '';
+      position: absolute;
+      width: 16px;
+      height: 16px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      border-radius: 50%;
+      transition: transform 0.2s;
+    }
+
+    .power-toggle input:checked + .power-slider {
+      background-color: #28a745;
+    }
+
+    .power-toggle input:checked + .power-slider::before {
+      transform: translateX(18px);
+    }
+
+    .power-toggle input:focus-visible + .power-slider {
+      outline: 2px solid #007bff;
+      outline-offset: 2px;
+    }
+
+    #paused-notice {
+      display: none;
+      background: #f8f9fa;
+      border: 1px solid #dee2e6;
+      border-radius: 6px;
+      padding: 10px 12px;
+      font-size: 12px;
+      color: #555;
+      margin-bottom: 14px;
+      line-height: 1.5;
+    }
   </style>
 </head>
 <body>
-  <header><h1>UPF Scanner</h1></header>
+  <header class="toggle-header">
+    <h1>UPF Scanner</h1>
+    <label class="power-toggle" aria-label="Enable or disable UPF Scanner">
+      <input type="checkbox" id="enableToggle" checked>
+      <span class="power-slider"></span>
+    </label>
+  </header>
+  <div id="paused-notice">Extension paused — no badges or API calls on this tab.</div>
   <main>
     <section id="product-section" aria-label="Product NOVA score" aria-live="polite" aria-atomic="true">
       <div class="product-row">
