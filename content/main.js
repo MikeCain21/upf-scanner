@@ -101,6 +101,13 @@
   let _enabled = true;
 
   /**
+   * Whether detection observers and SPA listeners have been set up for this page.
+   * Guards against duplicate observer/listener registration on re-enable.
+   * @type {boolean}
+   */
+  let _detectionStarted = false;
+
+  /**
    * Removes all NOVA badges and clears the badged-element tracker.
    * Called both on SPA navigation and when the extension is disabled.
    */
@@ -496,9 +503,18 @@
   /**
    * Starts badge detection and sets up SPA and mutation observers.
    * Extracted so both normal and incognito paths share the same startup sequence.
+   * Guards against duplicate setup: on re-enable after disable, only reruns
+   * detectAndBadge() without registering additional observers or listeners.
    * @param {object} adapter
    */
   function startDetection(adapter) {
+    if (_detectionStarted) {
+      // Observers and listeners are already wired — just re-run detection.
+      detectAndBadge(adapter);
+      return;
+    }
+    _detectionStarted = true;
+
     const run = () => {
       detectAndBadge(adapter);
       setupSpaNavigation(adapter);
