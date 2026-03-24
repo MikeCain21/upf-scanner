@@ -109,15 +109,6 @@
     _badged.clear();
   }
 
-  // React to toggle changes on already-loaded tabs without requiring a reload.
-  // Filter strictly by key name — storage.onChanged fires for ALL extension storage.
-  chrome.storage.onChanged.addListener((changes, area) => {
-    if (area === 'local' && 'extensionEnabled' in changes) {
-      _enabled = !!changes.extensionEnabled.newValue;
-      if (!_enabled) disableOnPage();
-    }
-  });
-
   // ---------------------------------------------------------------------------
   // Adapter resolution
   // ---------------------------------------------------------------------------
@@ -453,6 +444,16 @@
     browser.storage.local.get({ debugMode: false, extensionEnabled: true }).then((data) => {
       if (data.debugMode !== undefined) CONFIG.DEBUG = !!data.debugMode;
       _enabled = data.extensionEnabled !== false; // default true if key not yet set
+
+      // Register the toggle listener HERE — after _enabled is set from storage —
+      // so a storage change that fires while the initial get() is still pending
+      // cannot be overwritten by the get() callback (race condition prevention).
+      chrome.storage.onChanged.addListener((changes, area) => {
+        if (area === 'local' && 'extensionEnabled' in changes) {
+          _enabled = !!changes.extensionEnabled.newValue;
+          if (!_enabled) disableOnPage();
+        }
+      });
 
       if (!_enabled) return; // extension is paused — do nothing on this page
 
