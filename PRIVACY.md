@@ -28,7 +28,18 @@ If OpenFoodFacts doesn't have a NOVA score for that barcode, the ingredient list
 
 Both of these are **public food label data**, not personal information. OpenFoodFacts may log these requests as part of normal server operation, the same way any website logs traffic. Their privacy policy is at: https://world.openfoodfacts.org/privacy
 
-**Nothing else is sent anywhere.**
+**Nothing else is sent anywhere automatically** — unless you choose to use the feedback form described below.
+
+---
+
+## Feedback form (optional)
+
+Each NOVA badge tooltip includes a **"Report incorrect score"** link. If you click it, your browser opens a Google Form with two fields pre-filled:
+
+- The URL of the product page you were viewing
+- The NOVA score the extension showed
+
+This is entirely voluntary — nothing is sent until you click the link. If you do submit the form, the data is handled by Google under [Google's privacy policy](https://policies.google.com/privacy). The form is used only to improve classification accuracy.
 
 ---
 
