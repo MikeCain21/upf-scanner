@@ -90,6 +90,35 @@
   }
 
   // ---------------------------------------------------------------------------
+  // Extension enable/disable state
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Whether the extension is currently active on this page.
+   * Starts true; updated by storage.onChanged when the user toggles the popup.
+   * @type {boolean}
+   */
+  let _enabled = true;
+
+  /**
+   * Removes all NOVA badges and clears the badged-element tracker.
+   * Called both on SPA navigation and when the extension is disabled.
+   */
+  function disableOnPage() {
+    document.querySelectorAll('.nova-badge').forEach(b => b.remove());
+    _badged.clear();
+  }
+
+  // React to toggle changes on already-loaded tabs without requiring a reload.
+  // Filter strictly by key name — storage.onChanged fires for ALL extension storage.
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area === 'local' && 'extensionEnabled' in changes) {
+      _enabled = !!changes.extensionEnabled.newValue;
+      if (!_enabled) disableOnPage();
+    }
+  });
+
+  // ---------------------------------------------------------------------------
   // Adapter resolution
   // ---------------------------------------------------------------------------
 
@@ -278,6 +307,7 @@
    * @param {object} adapter
    */
   function detectAndBadge(adapter) {
+    if (!_enabled) return;
     const { injectBadge } = window.__novaExt;
 
     const products = adapter.detectProducts(document);
@@ -413,19 +443,18 @@
 
   /**
    * Initialises the extension.
-   * Loads debug preference from storage before first MutationObserver fire.
+   * Loads debug preference and extensionEnabled from storage before first MutationObserver fire.
    */
   function init() {
     const adapter = findAdapter();
-    if (!adapter) {
-      return;
-    }
+    if (!adapter) return;
 
-    // Load debug preference from storage before first detection run so that
-    // CONFIG.DEBUG is guaranteed set when detectAndBadge() is first called.
-    browser.storage.local.get(['debugMode']).then((data) => {
-      // Only override the compiled default when debugMode is explicitly set in storage
+    // Merge debugMode and extensionEnabled into a single storage read to avoid two round-trips.
+    browser.storage.local.get({ debugMode: false, extensionEnabled: true }).then((data) => {
       if (data.debugMode !== undefined) CONFIG.DEBUG = !!data.debugMode;
+      _enabled = data.extensionEnabled !== false; // default true if key not yet set
+
+      if (!_enabled) return; // extension is paused — do nothing on this page
 
       log(`Extension loaded — Version ${CONFIG.VERSION}`);
       log(`Using adapter: ${adapter.SITE_ID}`);
