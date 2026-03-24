@@ -18,9 +18,6 @@
 
 'use strict';
 
-// Load browser polyfill first — maps browser.* → chrome.* on Chrome/Edge;
-// no-op on Firefox where browser.* is native.
-importScripts('../lib/browser-polyfill.js');
 importScripts('../lib/storage-crypto.js');
 importScripts('asda-api.js');
 importScripts('sainsburys-api.js');
@@ -254,19 +251,19 @@ function hashIngredients(str) {
 async function getCached(barcode) {
   const key = CACHE_PREFIX + barcode;
   try {
-    const result = await browser.storage.local.get(key);
+    const result = await chrome.storage.local.get(key);
     if (!result[key]) return null;
 
     const cached = await StorageCrypto.decryptValue(result[key]);
     if (!cached) {
       // Legacy unencrypted entry — remove and treat as miss.
-      await browser.storage.local.remove(key);
+      await chrome.storage.local.remove(key);
       return null;
     }
 
     if (Date.now() - cached.timestamp > CACHE_TTL_MS) {
       // Entry expired — remove and treat as miss
-      await browser.storage.local.remove(key);
+      await chrome.storage.local.remove(key);
       return null;
     }
 
@@ -289,7 +286,7 @@ async function setCached(barcode, entry) {
   const key = CACHE_PREFIX + barcode;
   try {
     const encrypted = await StorageCrypto.encryptValue({ ...entry, timestamp: Date.now() });
-    await browser.storage.local.set({ [key]: encrypted });
+    await chrome.storage.local.set({ [key]: encrypted });
     if (DEBUG) console.log(`[NOVA Cache] Stored ${barcode}`);
   } catch (err) {
     if (DEBUG) console.warn('[NOVA Cache] Write error:', err.message);
@@ -475,7 +472,7 @@ async function lookupProduct(barcode, isIncognito = false) {
 // Message handler
 // ---------------------------------------------------------------------------
 
-browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (DEBUG) console.log('[NOVA Background] Message received:', message.type, 'from', sender.tab?.url || 'popup');
 
   // ---------------------------------------------------------------------------
@@ -499,11 +496,11 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
     if (message.type === 'CLEAR_CACHE') {
       (async () => {
-        const allData = await browser.storage.local.get(null);
+        const allData = await chrome.storage.local.get(null);
         const cacheKeys = Object.keys(allData).filter(k =>
           k.startsWith('product_') || k.startsWith('ingredients_') || k.startsWith(CACHE_PREFIX)
         );
-        await browser.storage.local.remove(cacheKeys);
+        await chrome.storage.local.remove(cacheKeys);
         sendResponse({ cleared: cacheKeys.length });
       })();
       return true; // async
