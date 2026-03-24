@@ -11,12 +11,12 @@
 | Permission | Scope | Justification |
 |-----------|-------|---------------|
 | `storage` | `chrome.storage.local` and `chrome.storage.session` | Cache product classifications; store per-tab NOVA state |
-| Host: `https://www.tesco.com/*` | Content script injection | Required to read product pages and inject NOVA badges |
-| Host: `https://www.sainsburys.co.uk/*` | Content script injection | Required to read product pages and inject NOVA badges |
-| Host: `https://www.asda.com/*` | Content script injection | Required to read product pages and inject NOVA badges |
-| Host: `https://groceries.morrisons.com/*` | Content script injection | Required to read product pages and inject NOVA badges |
-| Host: `https://www.waitrose.com/*` | Content script injection | Required to read product pages and inject NOVA badges |
-| Host: `https://www.ocado.com/*` | Content script injection | Required to read product pages and inject NOVA badges |
+| Host: `https://www.tesco.com/*` | Content script injection | Content script scoped to product detail pages only; required to read product DOM and inject NOVA badges |
+| Host: `https://www.sainsburys.co.uk/*` | Content script injection | Content script scoped to product detail pages only; required to read product DOM and inject NOVA badges |
+| Host: `https://www.asda.com/*` | Content script injection | Content script scoped to product detail pages only; required to read product DOM and inject NOVA badges |
+| Host: `https://groceries.morrisons.com/*` | Content script injection | Content script scoped to product detail pages only; required to read product DOM and inject NOVA badges |
+| Host: `https://www.waitrose.com/*` | Content script injection | Content script scoped to product detail pages only; required to read product DOM and inject NOVA badges |
+| Host: `https://www.ocado.com/*` | Content script injection | Content script scoped to product detail pages only; required to read product DOM and inject NOVA badges |
 | Host: `https://world.openfoodfacts.org/*` | Fetch calls from service worker | Look up NOVA scores and ingredient classifications |
 
 ### Permissions NOT Requested
@@ -31,6 +31,12 @@ The extension deliberately does **not** request:
 - `geolocation` — cannot access location
 - `identity` — no user account or sign-in
 - `externally_connectable` (matches) — web pages cannot message the extension; declared with `ids: []` to explicitly block all other extensions too
+
+### Incognito Mode Behaviour
+
+The extension defaults to **off** in incognito windows — no content script activity, no API calls to OpenFoodFacts. If the user has enabled "Allow in Incognito" for the extension in Chrome settings, they can opt in for a specific session via the popup. Session state is stored in `chrome.storage.session`, which Chrome clears automatically when the incognito window closes.
+
+This behaviour exceeds the Chrome guidance requirement (which mandates blocking only local storage writes in incognito). No barcodes are sent to OpenFoodFacts in private browsing without explicit user consent.
 
 ---
 

@@ -61,10 +61,20 @@ On ASDA product pages, the extension temporarily reads a **guest session token**
 The extension requests only the minimum permissions needed:
 
 - **Storage** — to save the local cache described above
-- **Supported supermarket sites** (Tesco, Sainsbury's, ASDA, Morrisons, Waitrose, Ocado) — to read product pages and show NOVA badges
+- **Supported supermarket product pages** (Tesco, Sainsbury's, ASDA, Morrisons, Waitrose, Ocado) — to read product detail pages and show NOVA badges. The extension only activates on individual product pages — not on search, category, checkout, or account pages.
 - **OpenFoodFacts.org** — to look up NOVA scores
 
 It cannot access any other websites, read your browsing history, or run in the background when you're not on one of the supported supermarket sites listed above.
+
+---
+
+## Incognito mode
+
+The extension defaults to **paused** in incognito windows. No badges are shown and no requests are made to OpenFoodFacts. You can enable it for a specific incognito session by opening the UPF Scanner popup — the setting is discarded when the incognito window closes and each new incognito session starts fresh.
+
+## Enable/disable
+
+You can pause the extension at any time by opening the popup and toggling it off. While paused, no badges are injected and no API calls are made. The setting persists across browser restarts.
 
 ---
 

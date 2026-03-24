@@ -39,7 +39,8 @@ For a deeper dive, see the BBC documentary [*Irresistible: Why We Can't Stop Eat
 - **Detailed Info** - Hover over badge to see why a product is classified as NOVA 4
 - **Fast & Non-Intrusive** - Doesn't slow down your shopping experience
 - **Hybrid Classification** - Uses OpenFoodFacts database + ingredient analysis for maximum coverage
-- **Privacy-Focused** - No tracking, no data collection, works offline with cache
+- **Privacy-Focused** — No tracking, no data collection, works offline with cache. Defaults to off in incognito; pause anytime from the popup.
+- **Privacy Controls** — Toggle the extension off from the popup at any time; it defaults to paused in incognito mode, with a one-tap session opt-in
 
 ---
 

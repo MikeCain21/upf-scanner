@@ -255,6 +255,7 @@ Reading from the existing cache in incognito is still permitted — a cache hit 
 - Classification still works in incognito (API calls proceed; per-tab session state still saves as it is cleared on tab close)
 - No performance impact for regular browsing; incognito sessions pay a small cost for repeated lookups of the same product across sessions
 
+**Update (2026-03-24):** Extended incognito handling to default the extension off entirely in incognito windows. Content scripts detect `chrome.extension.inIncognitoContext` and bail out before any badge injection or API calls. The user can opt in for a specific incognito session via the popup — state stored in `chrome.storage.session` (auto-cleared when the incognito window closes). This exceeds the Chrome guidance requirement (which only mandates blocking local storage writes in incognito) and ensures no barcodes are sent to OpenFoodFacts in private browsing without explicit user consent.
 
 ---
 

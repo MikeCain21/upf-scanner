@@ -16,6 +16,7 @@ What you get:
 - Covers Tesco, Sainsbury's, ASDA, Morrisons, Waitrose & Ocado
 - Powered by OpenFoodFacts barcode lookup with ingredient analysis as fallback
 - No account, no tracking, no data collection — runs entirely in your browser
+- Pause the extension anytime from the popup; automatically off in incognito mode
 
 Install and browse. Badges appear automatically.
 
@@ -32,7 +33,7 @@ Display NOVA 1–4 ultra-processed food classification badges on product pages o
 | Permission | Why it's needed |
 |---|---|
 | `storage` | Caches NOVA classifications locally so repeated visits to the same product don't trigger a new API call |
-| Host permissions: 6 supermarket domains | Required for content scripts to read product page DOM and inject badges |
+| Host permissions: 6 supermarket domains | Content scripts activate on **product detail pages only** (not search, checkout, or account pages); required to read product DOM and inject NOVA badges |
 | Host permission: `world.openfoodfacts.org` | Required for the service worker to call the OpenFoodFacts API for barcode/ingredient lookup |
 
 ### Remote Code
@@ -52,6 +53,8 @@ Display NOVA 1–4 ultra-processed food classification badges on product pages o
 The only external communication is outbound requests to `world.openfoodfacts.org` to look up product NOVA scores by barcode or ingredient list. These requests contain product data (barcode/ingredients) from the page being viewed — no user identity is attached.
 
 NOVA classification results are cached locally in `chrome.storage.local`, encrypted with AES-256-GCM. The encrypted cache never leaves the user's device and is not sent to any server operated by this extension.
+
+In incognito windows, the extension defaults to **off** — no badges are shown and no requests are made to OpenFoodFacts until the user explicitly enables it for the current session via the extension popup. Session state is stored in `chrome.storage.session`, which Chrome automatically clears when the incognito window closes.
 
 ### Privacy Policy
 
