@@ -1,6 +1,6 @@
 # UPF Scanner – Spot Ultra-Processed Food
 
-![UPF Scanner](icons/readme-banner.png)
+![UPF Scanner](store-assets/marquee-1400x560.png)
 
 **Identify ultra-processed foods while shopping online**
 

@@ -27,20 +27,9 @@ async function generateIcons() {
   }
 }
 
-async function generateBanner() {
-  const svgPath = path.join(ICONS_DIR, 'readme-banner.svg');
-  const outPath = path.join(ICONS_DIR, 'readme-banner.png');
-
-  await sharp(svgPath)
-    .png()
-    .toFile(outPath);
-  console.log('✅ Generated readme-banner.png');
-}
-
 async function main() {
   console.log('Generating UPF Scanner icons...\n');
   await generateIcons();
-  await generateBanner();
   console.log('\nDone.');
 }
 
