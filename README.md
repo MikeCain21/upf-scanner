@@ -126,10 +126,13 @@ Click the extension icon on any supported product page to see:
 - The product's NOVA score with name and classification label
 - Why it was classified (NOVA 4 indicator ingredients, if applicable)
 - A link to the product on Open Food Facts
+- Enable/disable toggle to pause all badges and API calls
 - Settings (clear cache, toggle debug mode)
 - Links to the NOVA Classification Guide and GitHub issue tracker
 
-![UPF Scanner popup showing NOVA 2 rating for Essential Unsalted Butter on Waitrose](docs/screenshots/PopUPUI.png)
+| Enabled | Disabled |
+|---------|----------|
+| ![UPF Scanner popup — extension enabled](docs/screenshots/PopUpUI.png) | ![UPF Scanner popup — extension disabled](docs/screenshots/PopUpUiDisabled.png) |
 
 ---
 
