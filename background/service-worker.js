@@ -18,6 +18,8 @@
 
 'use strict';
 
+/* global StorageCrypto, isValidNovaScore, isValidBarcode, MAX_INGREDIENTS_TEXT_LENGTH, fetchAsdaProduct, fetchSainsburysBarcodes, fetchOcadoIngredients */
+
 importScripts('../lib/storage-crypto.js');
 importScripts('asda-api.js');
 importScripts('sainsburys-api.js');

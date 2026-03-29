@@ -1,3 +1,5 @@
+/* global module */
+
 /**
  * Pure validation helpers for message handler input sanitization.
  * Used by the background service worker to validate content script messages.

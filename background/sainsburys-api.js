@@ -1,3 +1,5 @@
+/* global module */
+
 /**
  * Sainsbury's GOL API integration — must only be called from service worker context.
  * The SKU is extracted by the content script from JSON-LD and passed via message.

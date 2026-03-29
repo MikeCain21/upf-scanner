@@ -1,3 +1,5 @@
+/* global module */
+
 /**
  * Ocado BOP API integration — must only be called from service worker context.
  * The retailerProductId is extracted by the content script from the page URL

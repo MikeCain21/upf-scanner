@@ -1,3 +1,5 @@
+/* global module */
+
 /**
  * ASDA product API integration — must only be called from service worker context.
  * Token is extracted by the content script (same-origin cookie access required)
