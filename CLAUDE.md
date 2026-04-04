@@ -23,7 +23,7 @@ Build a Chrome extension that identifies ultra-processed foods on UK supermarket
 - **Data Source:** Barcode-first: extract `gtin13` from JSON-LD → OFF v2 barcode lookup (primary) → OFF v3 stateless ingredient analysis → local rule-based classifier (final fallback). See `docs/DECISIONS.md` for rationale.
 - **Approach:** Barcode-first classification — extract barcode from PDP JSON-LD → look up in OFF v2 for NOVA score → fall back to OFF v3 ingredient analysis or local rules
 - **Sites supported:** Tesco, Sainsbury's, ASDA, Morrisons, Waitrose, Ocado (each has a dedicated adapter in `content/sites/`)
-- **Testing:** Jest unit tests (`npm test`) — all tests must pass (346 tests, all green)
+- **Testing:** Jest unit tests (`npm test`) — all tests must pass (395 tests, all green)
 - **Development:** Documentation-first, test-driven
 
 ### Success Criteria

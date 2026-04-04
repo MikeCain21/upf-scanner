@@ -20,7 +20,7 @@ PASS test/unit/nova-classifier.test.js
 PASS test/unit/nova-indicators.test.js
 ...
 
-Tests: 346 passed
+Tests: 395 passed
 Time: ~1s
 ```
 

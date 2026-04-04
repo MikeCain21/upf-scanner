@@ -30,6 +30,9 @@ Desktop.ini
 *.crx
 *.zip
 
+# Store assets - large video files (not committed to repo)
+store-assets/*.mp4
+
 # Tesco test fixture pages (saved HTML — not redistributed)
 test/pages/
 

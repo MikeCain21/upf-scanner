@@ -9,15 +9,22 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+---
+
+## [1.3.0] — 2026-04-04
+
 ### Added
 - ESLint (`eslint:recommended` + `no-var`) with CI enforcement — `npm run lint`
-- Unit tests for Ocado adapter (`test/unit/ocado-adapter.test.js`) — 346 tests total
+- Unit tests for Ocado adapter (`test/unit/ocado-adapter.test.js`) — 395 tests total
 - `DEBUG` flag in service worker — verbose logging is now opt-in (set `DEBUG = true` to re-enable)
 - Prettier code formatter — `npm run format` (`.prettierrc` config: single quotes, 2-space, trailing commas)
 - `.editorconfig` — consistent indentation and line endings across editors
 - `.nvmrc` — pins Node.js 18 for `nvm use` / `fnm use`
 - `npm run test:coverage` — generates per-file coverage report (configured in `jest.config.js`)
 - Three additional ESLint rules: `prefer-const`, `eqeqeq`, `no-unused-vars`
+- Privacy policy updated to disclose Google Forms feedback link
+- Store listing updated with privacy dashboard section
+- README updated with store marquee banner and popup toggle screenshots
 
 ### Changed
 - Test directory reorganised into `unit/`, `connectivity/`, and `manual/` subdirectories
@@ -28,6 +35,7 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 - Duplicate JSDoc block removed from `popup/popup.js`
+- ESLint global declarations added to unblock CI
 
 ---
 
