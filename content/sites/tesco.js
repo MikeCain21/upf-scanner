@@ -73,9 +73,13 @@ class TescoAdapter extends BaseAdapter {
    * @returns {boolean}
    */
   isSupported(url) {
-    return typeof url === 'string' &&
-      url.includes(TESCO_HOSTNAME) &&
-      TESCO_PRODUCT_URL_PATTERN.test(url);
+    try {
+      const { hostname, pathname } = new URL(url);
+      return (hostname === TESCO_HOSTNAME || hostname.endsWith('.' + TESCO_HOSTNAME)) &&
+        TESCO_PRODUCT_URL_PATTERN.test(pathname);
+    } catch {
+      return false;
+    }
   }
 
   /**

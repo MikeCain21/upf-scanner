@@ -78,7 +78,7 @@ describe('registry.getAdapter', () => {
   it('returns the first matching adapter when multiple could match', () => {
     const registry = makeRegistry();
     const first = fakeAdapter('tesco.com', 'tesco-first');
-    const second = { SITE_ID: 'tesco-second', isSupported: (url) => url.includes('tesco.com') };
+    const second = { SITE_ID: 'tesco-second', isSupported: (url) => { try { const { hostname } = new URL(url); return hostname === 'tesco.com' || hostname.endsWith('.tesco.com'); } catch { return false; } } };
     registry.register(first);
     registry.register(second);
     // First registered adapter wins

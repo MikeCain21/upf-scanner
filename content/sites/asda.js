@@ -64,9 +64,13 @@ class AsdaAdapter extends BaseAdapter {
    * @returns {boolean}
    */
   isSupported(url) {
-    return typeof url === 'string' &&
-      url.includes(ASDA_HOSTNAME) &&
-      url.includes('/product/');
+    try {
+      const { hostname, pathname } = new URL(url);
+      return (hostname === ASDA_HOSTNAME || hostname.endsWith('.' + ASDA_HOSTNAME)) &&
+        pathname.includes('/product/');
+    } catch {
+      return false;
+    }
   }
 
   /**
