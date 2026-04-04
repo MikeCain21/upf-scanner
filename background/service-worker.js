@@ -345,7 +345,7 @@ async function fetchProductByBarcode(barcode) {
  * @param {string|null} productId  - Unused; kept for backward-compatible call signature
  * @returns {Promise<{novaScore: number|null, markers: string[]}|null>}
  */
-async function analyzeIngredients(ingredientsText, productId, isIncognito = false) { // eslint-disable-line no-unused-vars
+async function analyzeIngredients(ingredientsText, productId, isIncognito = false) {
   // Cache keyed by ingredient text hash — reformulations get a fresh cache entry automatically
   const ingredientHash = hashIngredients(ingredientsText);
   const cacheKey = 'ingredients_' + ingredientHash;
