@@ -32,7 +32,12 @@ function makeRegistry() {
 function fakeAdapter(hostname, siteId = hostname) {
   return {
     SITE_ID: siteId,
-    isSupported: (url) => url.includes(hostname),
+    isSupported: (url) => {
+      try {
+        const { hostname: h } = new URL(url);
+        return h === hostname || h.endsWith('.' + hostname);
+      } catch { return false; }
+    },
   };
 }
 
@@ -78,7 +83,7 @@ describe('registry.getAdapter', () => {
   it('returns the first matching adapter when multiple could match', () => {
     const registry = makeRegistry();
     const first = fakeAdapter('tesco.com', 'tesco-first');
-    const second = { SITE_ID: 'tesco-second', isSupported: (url) => { try { const { hostname } = new URL(url); return hostname === 'tesco.com' || hostname.endsWith('.tesco.com'); } catch { return false; } } };
+    const second = fakeAdapter('tesco.com', 'tesco-second');
     registry.register(first);
     registry.register(second);
     // First registered adapter wins
