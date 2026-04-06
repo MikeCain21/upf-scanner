@@ -127,6 +127,10 @@ describe('isSupported', () => {
   it('returns false for a Tesco URL', () => {
     expect(adapter.isSupported('https://www.tesco.com/groceries/en-GB/products/302328940')).toBe(false);
   });
+
+  it('returns false for a crafted URL with sainsburys.co.uk in the path but a different hostname', () => {
+    expect(adapter.isSupported('https://evil.com/sainsburys.co.uk/gol-ui/product/x')).toBe(false);
+  });
 });
 
 // ---------------------------------------------------------------------------

@@ -67,9 +67,13 @@ class MorrisonsAdapter extends BaseAdapter {
    * @returns {boolean}
    */
   isSupported(url) {
-    return typeof url === 'string' &&
-      url.includes(MORRISONS_HOSTNAME) &&
-      url.includes('/products/');
+    try {
+      const { hostname, pathname } = new URL(url);
+      return (hostname === MORRISONS_HOSTNAME || hostname.endsWith('.' + MORRISONS_HOSTNAME)) &&
+        pathname.includes('/products/');
+    } catch {
+      return false;
+    }
   }
 
   /**
