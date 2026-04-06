@@ -204,4 +204,9 @@ class TescoAdapter extends BaseAdapter {
 // Self-register with the adapter registry
 // ---------------------------------------------------------------------------
 
-registry.register(new TescoAdapter());
+// Dual export: CommonJS for Jest tests; self-register in browser content scripts.
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { TescoAdapter };
+} else {
+  registry.register(new TescoAdapter());
+}

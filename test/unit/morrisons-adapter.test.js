@@ -175,6 +175,10 @@ describe('isSupported', () => {
   it('returns false for a non-string value', () => {
     expect(adapter.isSupported(null)).toBe(false);
   });
+
+  it('returns false for a crafted URL with groceries.morrisons.com in the path but a different hostname', () => {
+    expect(adapter.isSupported('https://evil.com/groceries.morrisons.com/products/123')).toBe(false);
+  });
 });
 
 // ---------------------------------------------------------------------------

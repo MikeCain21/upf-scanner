@@ -142,6 +142,14 @@ describe('isSupported', () => {
   it('returns false for an empty string', () => {
     expect(adapter.isSupported('')).toBe(false);
   });
+
+  it('returns false for a crafted URL with asda.com in the path but a different hostname', () => {
+    expect(adapter.isSupported('https://evil.com/asda.com/product/123')).toBe(false);
+  });
+
+  it('returns true for a valid asda.com subdomain PDP URL', () => {
+    expect(adapter.isSupported('https://www.asda.com/groceries/product/cola/coca-cola-1-75l/7387625')).toBe(true);
+  });
 });
 
 // ---------------------------------------------------------------------------
