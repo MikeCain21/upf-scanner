@@ -1,12 +1,6 @@
 // test/unit/storage-crypto.test.js
 'use strict';
 
-// Node 18 doesn't expose crypto as a bare global in Jest's node environment.
-// Polyfill it here so the Web Crypto API is available on all supported Node versions.
-if (typeof crypto === 'undefined') {
-  global.crypto = require('node:crypto').webcrypto;
-}
-
 // Mock chrome.storage.local with an in-memory store before requiring the module.
 const store = {};
 global.chrome = {

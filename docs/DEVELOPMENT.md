@@ -41,7 +41,7 @@ This is the complete guide for setting up and working on the UPF Scanner. It cov
 
 You need three things installed before you can work on this project. Check whether you already have them, then install anything missing.
 
-### 1. Node.js (version 18 or higher)
+### 1. Node.js (version 24 or higher)
 
 Node.js lets you run JavaScript outside a browser — it is what runs the automated tests.
 
@@ -49,7 +49,7 @@ Node.js lets you run JavaScript outside a browser — it is what runs the automa
 ```
 node --version
 ```
-You should see something like `v20.11.0`. Any number starting with `v18` or higher is fine.
+You should see something like `v24.x.x`. Any number starting with `v24` or higher is fine.
 
 **Install it (if missing):**
 - Go to https://nodejs.org
