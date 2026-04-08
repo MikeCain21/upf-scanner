@@ -17,7 +17,14 @@ const { BaseAdapter } = require('../../content/sites/base-adapter');
 
 class ConcreteAdapter extends BaseAdapter {
   get SITE_ID() { return 'test'; }
-  isSupported(url) { return url.includes('example.com'); }
+  isSupported(url) {
+    try {
+      const { hostname } = new URL(url);
+      return hostname === 'example.com' || hostname.endsWith('.example.com');
+    } catch {
+      return false;
+    }
+  }
   detectProducts(doc) { return []; }
   extractProductInfo(el) { return { name: '', url: '', productId: null }; }
 }

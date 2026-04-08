@@ -78,9 +78,13 @@ class SainsburysAdapter extends BaseAdapter {
    * @returns {boolean}
    */
   isSupported(url) {
-    return typeof url === 'string' &&
-      url.includes(SAINSBURYS_HOSTNAME) &&
-      url.includes('/gol-ui/product/');
+    try {
+      const { hostname, pathname } = new URL(url);
+      return (hostname === SAINSBURYS_HOSTNAME || hostname.endsWith('.' + SAINSBURYS_HOSTNAME)) &&
+        pathname.includes('/gol-ui/product/');
+    } catch {
+      return false;
+    }
   }
 
   /**

@@ -64,9 +64,13 @@ class OcadoAdapter extends BaseAdapter {
    * @returns {boolean}
    */
   isSupported(url) {
-    return typeof url === 'string' &&
-      url.includes(OCADO_HOSTNAME) &&
-      url.includes('/products/');
+    try {
+      const { hostname, pathname } = new URL(url);
+      return (hostname === OCADO_HOSTNAME || hostname.endsWith('.' + OCADO_HOSTNAME)) &&
+        pathname.includes('/products/');
+    } catch {
+      return false;
+    }
   }
 
   /**

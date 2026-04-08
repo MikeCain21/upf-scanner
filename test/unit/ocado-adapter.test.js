@@ -158,6 +158,10 @@ describe('isSupported', () => {
   it('returns false for a non-string value', () => {
     expect(adapter.isSupported(null)).toBe(false);
   });
+
+  it('returns false for a crafted URL with ocado.com in the path but a different hostname', () => {
+    expect(adapter.isSupported('https://evil.com/ocado.com/products/123')).toBe(false);
+  });
 });
 
 // ---------------------------------------------------------------------------

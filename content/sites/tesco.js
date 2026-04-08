@@ -73,9 +73,13 @@ class TescoAdapter extends BaseAdapter {
    * @returns {boolean}
    */
   isSupported(url) {
-    return typeof url === 'string' &&
-      url.includes(TESCO_HOSTNAME) &&
-      TESCO_PRODUCT_URL_PATTERN.test(url);
+    try {
+      const { hostname, pathname } = new URL(url);
+      return (hostname === TESCO_HOSTNAME || hostname.endsWith('.' + TESCO_HOSTNAME)) &&
+        TESCO_PRODUCT_URL_PATTERN.test(pathname);
+    } catch {
+      return false;
+    }
   }
 
   /**
@@ -200,4 +204,9 @@ class TescoAdapter extends BaseAdapter {
 // Self-register with the adapter registry
 // ---------------------------------------------------------------------------
 
-registry.register(new TescoAdapter());
+// Dual export: CommonJS for Jest tests; self-register in browser content scripts.
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { TescoAdapter };
+} else {
+  registry.register(new TescoAdapter());
+}

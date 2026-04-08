@@ -132,6 +132,10 @@ describe('isSupported', () => {
   it('returns false for an empty string', () => {
     expect(adapter.isSupported('')).toBe(false);
   });
+
+  it('returns false for a crafted URL with waitrose.com in the path but a different hostname', () => {
+    expect(adapter.isSupported('https://evil.com/waitrose.com/ecom/products/x')).toBe(false);
+  });
 });
 
 // ---------------------------------------------------------------------------
