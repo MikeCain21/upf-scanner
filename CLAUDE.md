@@ -1,8 +1,5 @@
 # CLAUDE.md - Development Guide for Claude
 
-**Last Updated:** 2026-03-22
-**Version:** 1.2.1
-
 > **About this file:** This project uses [Claude Code](https://claude.ai/claude-code) for AI-assisted development. This file is the primary instruction document that Claude reads at the start of every session to understand the project's architecture, principles, and conventions. It is intentionally committed to the repo for transparency.
 >
 > **For human contributors:** See [CONTRIBUTING.md](CONTRIBUTING.md) and [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) instead.
