@@ -1,7 +1,7 @@
 # Architecture Decision Records
 
 **Project:** UPF Scanner
-**Last Updated:** 2026-03-24
+**Last Updated:** 2026-04-09
 
 > This document records non-obvious architectural and technical decisions. Straightforward choices (platform, framework, caching mechanism) are omitted — the code itself is sufficient documentation for those.
 
@@ -25,6 +25,7 @@
 - [ADR-014: Move ASDA Authenticated API Call to Service Worker](#adr-014-move-asda-authenticated-api-call-to-service-worker)
 - [ADR-015: Delegate Sainsbury's and Ocado API Calls to Service Worker](#adr-015-delegate-sainsburys-and-ocado-api-calls-to-service-worker)
 - [ADR-016: AES-256-GCM Encryption for Local Cache](#adr-016-aes-256-gcm-encryption-for-local-cache)
+- [ADR-017: Broad Content Script Matches for SPA Navigation Support](#adr-017-broad-content-script-matches-for-spa-navigation-support)
 
 ---
 
@@ -357,3 +358,35 @@ Generate a random 256-bit AES-GCM key on first install, persist as raw base64 in
 - No user-visible change — cache still works, Clear Cache button still works ✅
 - Slight latency increase on first cache operation (key generation ~1ms) — negligible ✅
 - Key loss (e.g. storage wipe) causes a full cache miss, not data loss ✅
+
+---
+
+## ADR-017: Broad Content Script Matches for SPA Navigation Support
+
+**Status:** Accepted | **Date:** 2026-04-09
+
+**Context:**
+Users reported that NOVA badges occasionally didn't appear on first visit to a product page, but always appeared after a page refresh. Root cause: all supported supermarkets are React SPAs. When a user navigates from a non-product page (homepage, search results, category page) to a product page via React Router (`history.pushState`), Chrome does not create a new document. Content scripts are injected at document-creation time — so if the initial page URL didn't match the narrow `content_scripts.matches` pattern (e.g. `tesco.com/groceries/en-GB/products/*`), the content script was never injected. Refreshing the page at the product URL triggered a full document load, causing Chrome to inject the content script and show the badge.
+
+**Options Considered:**
+
+1. **Broad `content_scripts.matches` (full domain)** — inject on all supermarket pages; add lightweight SPA URL-monitor for non-product startup path. CSS injected programmatically to avoid style leakage on non-product pages.
+2. **Dynamic injection via service worker** — use `chrome.scripting.executeScript` from `chrome.tabs.onUpdated` when tab URL changes to a product URL. Requires `scripting` permission; risk of double-injection when manifest also injects.
+3. **Keepalive polling in content script** — check URL on a timer and self-init when URL becomes a product page. No extra permission or injection needed, but relies on polling rather than event-driven detection.
+
+**Decision:**
+Option 1 — broad matches with programmatic CSS injection.
+
+- `content_scripts.matches` broadened to full domain for each supermarket (e.g. `https://www.tesco.com/*`)
+- `content_scripts.css` entries removed from manifest; CSS injected via `<link>` in `startDetection()` using `chrome.runtime.getURL`, scoped to product pages only
+- `web_accessible_resources` added to manifest for `content/ui/styles.css`
+- `watchForProductNavigation()` added to `content/main.js`: sets up `nova:urlchange` listener when `findAdapter()` returns null; calls `_initWithAdapter(adapter)` when URL matches a product page
+- `wrapHistoryMethod()` guarded against double-wrap (`._novaWrapped` flag) since it is now called from both `watchForProductNavigation()` and `setupSpaNavigation()`
+
+**Consequences:**
+- Badge appears on first SPA navigation from any supermarket page to a product page ✅
+- Direct URL loads and Google → product page unchanged ✅
+- Existing SPA navigation between product pages unchanged ✅
+- CSS only loads on product pages — no style leakage on non-product pages ✅
+- Extension JS loaded on all supermarket pages (minimal overhead; does nothing on non-product pages after `watchForProductNavigation()` sets up its listener)
+- `PRIVACY.md` and `store-assets/LISTING.md` updated to reflect that scripts run across the full site, but data access is restricted to product pages

@@ -365,14 +365,19 @@
 
   /**
    * Wraps a history method to fire a nova:urlchange event after the original call.
+   * Guard against double-wrapping: called from both watchForProductNavigation()
+   * (non-product page startup) and setupSpaNavigation() (post-detection setup),
+   * so the second call must be a no-op to avoid double-dispatching nova:urlchange.
    * @param {'pushState'|'replaceState'} method
    */
   function wrapHistoryMethod(method) {
+    if (history[method]._novaWrapped) return;
     const original = history[method].bind(history);
     history[method] = function (...args) {
       original(...args);
       window.dispatchEvent(new Event('nova:urlchange'));
     };
+    history[method]._novaWrapped = true;
   }
 
   /**
@@ -440,14 +445,13 @@
   // ---------------------------------------------------------------------------
 
   /**
-   * Initialises the extension.
-   * In incognito windows, defaults to off — requires explicit session opt-in.
-   * In normal windows, reads extensionEnabled from local storage (default: enabled).
+   * Reads storage settings and starts detection for the resolved adapter.
+   * Shared by two entry paths:
+   *   1. Direct product-page load — adapter resolved immediately in init()
+   *   2. SPA navigation — adapter resolved after URL change in watchForProductNavigation()
+   * @param {object} adapter
    */
-  function init() {
-    const adapter = findAdapter();
-    if (!adapter) return;
-
+  function _initWithAdapter(adapter) {
     const isIncognito = chrome.extension.inIncognitoContext;
 
     if (isIncognito) {
@@ -501,6 +505,79 @@
   }
 
   /**
+   * Sets up minimal URL monitoring when the content script loads on a
+   * non-product supermarket page (e.g. Tesco homepage, search results).
+   *
+   * The manifest now matches the full domain so the extension is ready for SPA
+   * navigation from any page within a supported supermarket site. When a
+   * pushState/replaceState/popstate transition lands on a product URL,
+   * _initWithAdapter() is called to start detection normally.
+   *
+   * The wrapHistoryMethod() guard prevents double-dispatch: setupSpaNavigation()
+   * also calls wrapHistoryMethod(), so the second call is a no-op.
+   *
+   * The _detectionStarted guard means subsequent product-to-product SPA navigations
+   * are handled exclusively by setupSpaNavigation()'s own listener.
+   */
+  function watchForProductNavigation() {
+    wrapHistoryMethod('pushState');
+    wrapHistoryMethod('replaceState');
+    window.addEventListener('popstate', () =>
+      window.dispatchEvent(new Event('nova:urlchange'))
+    );
+
+    window.addEventListener(
+      'nova:urlchange',
+      debounce(() => {
+        if (_detectionStarted) return; // full detection already running — do nothing
+        const adapter = findAdapter();
+        if (!adapter) return; // still not on a product page
+        _initWithAdapter(adapter);
+      }, 150)
+    );
+  }
+
+  /**
+   * Initialises the extension.
+   * With the manifest now matching the full supermarket domain (not just product
+   * URLs), two paths are possible:
+   *   - Product page (direct load / full-page navigation): adapter resolves
+   *     immediately → _initWithAdapter() starts detection.
+   *   - Non-product page (homepage, search, category): adapter is null →
+   *     watchForProductNavigation() monitors for SPA navigation to a product URL.
+   */
+  function init() {
+    const adapter = findAdapter();
+
+    if (!adapter) {
+      // Not on a product page yet — watch for SPA navigation to one.
+      watchForProductNavigation();
+      return;
+    }
+
+    _initWithAdapter(adapter);
+  }
+
+  /**
+   * Injects the badge stylesheet as a <link> element so it is only loaded on
+   * product pages, never on non-product supermarket pages where CSS class names
+   * could collide with the host page's own styles.
+   *
+   * CSS was previously declared in manifest content_scripts.css which caused it
+   * to load on every matched page (now the full domain). Programmatic injection
+   * here restricts it to pages where detection actually runs. The file is declared
+   * in manifest web_accessible_resources so chrome.runtime.getURL resolves it.
+   */
+  function injectBadgeStyles() {
+    if (document.querySelector('link[data-nova-styles]')) return;
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.setAttribute('data-nova-styles', '');
+    link.href = chrome.runtime.getURL('content/ui/styles.css');
+    document.head.appendChild(link);
+  }
+
+  /**
    * Starts badge detection and sets up SPA and mutation observers.
    * Extracted so both normal and incognito paths share the same startup sequence.
    * Guards against duplicate setup: on re-enable after disable, only reruns
@@ -508,6 +585,8 @@
    * @param {object} adapter
    */
   function startDetection(adapter) {
+    injectBadgeStyles();
+
     if (_detectionStarted) {
       // Observers and listeners are already wired — just re-run detection.
       detectAndBadge(adapter);

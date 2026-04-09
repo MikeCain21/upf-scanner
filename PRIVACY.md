@@ -72,7 +72,7 @@ On ASDA product pages, the extension temporarily reads a **guest session token**
 The extension requests only the minimum permissions needed:
 
 - **Storage** — to save the local cache described above
-- **Supported supermarket product pages** (Tesco, Sainsbury's, ASDA, Morrisons, Waitrose, Ocado) — to read product detail pages and show NOVA badges. The extension only activates on individual product pages — not on search, category, checkout, or account pages.
+- **Supported supermarket sites** (Tesco, Sainsbury's, ASDA, Morrisons, Waitrose, Ocado) — the extension's scripts are loaded on all pages of these sites so that NOVA badges appear seamlessly when you navigate within the site (e.g. from search results to a product page). **Badge injection and API calls only occur on individual product pages** — no data is read or transmitted on search, category, checkout, or account pages.
 - **OpenFoodFacts.org** — to look up NOVA scores
 
 It cannot access any other websites, read your browsing history, or run in the background when you're not on one of the supported supermarket sites listed above.
