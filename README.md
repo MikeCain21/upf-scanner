@@ -252,7 +252,7 @@ npm run format            # Prettier (auto-format source files)
 
 ## Roadmap
 
-### v1.3.0 (Current)
+### v1.3.1 (Current)
 - ✅ Tesco, Sainsbury's, Asda, Morrisons, Waitrose, Ocado support
 - ✅ NOVA 1–4 classification
 - ✅ OpenFoodFacts v3 barcode lookup + stateless ingredient analysis
