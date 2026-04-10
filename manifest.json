@@ -25,10 +25,23 @@
   "background": {
     "service_worker": "background/service-worker.js"
   },
+  "web_accessible_resources": [
+    {
+      "resources": ["content/ui/styles.css"],
+      "matches": [
+        "https://www.tesco.com/*",
+        "https://www.sainsburys.co.uk/*",
+        "https://www.asda.com/*",
+        "https://groceries.morrisons.com/*",
+        "https://www.waitrose.com/*",
+        "https://www.ocado.com/*"
+      ]
+    }
+  ],
   "content_scripts": [
     {
       "matches": [
-        "https://www.tesco.com/groceries/en-GB/products/*"
+        "https://www.tesco.com/*"
       ],
       "js": [
         "lib/browser-polyfill.js",
@@ -41,14 +54,11 @@
         "content/ui/badge.js",
         "content/main.js"
       ],
-      "css": [
-        "content/ui/styles.css"
-      ],
       "run_at": "document_idle"
     },
     {
       "matches": [
-        "https://www.waitrose.com/ecom/products/*"
+        "https://www.waitrose.com/*"
       ],
       "js": [
         "lib/browser-polyfill.js",
@@ -61,14 +71,11 @@
         "content/ui/badge.js",
         "content/main.js"
       ],
-      "css": [
-        "content/ui/styles.css"
-      ],
       "run_at": "document_idle"
     },
     {
       "matches": [
-        "https://www.sainsburys.co.uk/gol-ui/product/*"
+        "https://www.sainsburys.co.uk/*"
       ],
       "js": [
         "lib/browser-polyfill.js",
@@ -81,13 +88,10 @@
         "content/ui/badge.js",
         "content/main.js"
       ],
-      "css": [
-        "content/ui/styles.css"
-      ],
       "run_at": "document_idle"
     },
     {
-      "matches": ["https://www.asda.com/groceries/product/*"],
+      "matches": ["https://www.asda.com/*"],
       "js": [
         "lib/browser-polyfill.js",
         "content/sites/base-adapter.js",
@@ -99,11 +103,10 @@
         "content/ui/badge.js",
         "content/main.js"
       ],
-      "css": ["content/ui/styles.css"],
       "run_at": "document_idle"
     },
     {
-      "matches": ["https://groceries.morrisons.com/products/*"],
+      "matches": ["https://groceries.morrisons.com/*"],
       "js": [
         "lib/browser-polyfill.js",
         "content/sites/base-adapter.js",
@@ -115,11 +118,10 @@
         "content/ui/badge.js",
         "content/main.js"
       ],
-      "css": ["content/ui/styles.css"],
       "run_at": "document_idle"
     },
     {
-      "matches": ["https://www.ocado.com/products/*"],
+      "matches": ["https://www.ocado.com/*"],
       "js": [
         "lib/browser-polyfill.js",
         "content/sites/base-adapter.js",
@@ -131,7 +133,6 @@
         "content/ui/badge.js",
         "content/main.js"
       ],
-      "css": ["content/ui/styles.css"],
       "run_at": "document_idle"
     }
   ],

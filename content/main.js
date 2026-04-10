@@ -108,6 +108,15 @@
   let _detectionStarted = false;
 
   /**
+   * Set synchronously at the start of _initWithAdapter() to prevent a second
+   * call racing in before the async storage reads complete and _detectionStarted
+   * is set. Without this guard, rapid SPA navigations (product→product) could
+   * trigger duplicate startup work and multiple chrome.storage.onChanged registrations.
+   * @type {boolean}
+   */
+  let _initInProgress = false;
+
+  /**
    * Removes all NOVA badges and clears the badged-element tracker.
    * Called both on SPA navigation and when the extension is disabled.
    */
@@ -365,14 +374,20 @@
 
   /**
    * Wraps a history method to fire a nova:urlchange event after the original call.
+   * Guard against double-wrapping: called from both watchForProductNavigation()
+   * (non-product page startup) and setupSpaNavigation() (post-detection setup),
+   * so the second call must be a no-op to avoid double-dispatching nova:urlchange.
    * @param {'pushState'|'replaceState'} method
    */
   function wrapHistoryMethod(method) {
+    if (history[method]._novaWrapped) return;
     const original = history[method].bind(history);
     history[method] = function (...args) {
-      original(...args);
+      const result = original(...args);
       window.dispatchEvent(new Event('nova:urlchange'));
+      return result;
     };
+    history[method]._novaWrapped = true;
   }
 
   /**
@@ -440,14 +455,15 @@
   // ---------------------------------------------------------------------------
 
   /**
-   * Initialises the extension.
-   * In incognito windows, defaults to off — requires explicit session opt-in.
-   * In normal windows, reads extensionEnabled from local storage (default: enabled).
+   * Reads storage settings and starts detection for the resolved adapter.
+   * Shared by two entry paths:
+   *   1. Direct product-page load — adapter resolved immediately in init()
+   *   2. SPA navigation — adapter resolved after URL change in watchForProductNavigation()
+   * @param {object} adapter
    */
-  function init() {
-    const adapter = findAdapter();
-    if (!adapter) return;
-
+  function _initWithAdapter(adapter) {
+    if (_initInProgress || _detectionStarted) return;
+    _initInProgress = true;
     const isIncognito = chrome.extension.inIncognitoContext;
 
     if (isIncognito) {
@@ -501,6 +517,89 @@
   }
 
   /**
+   * Sets up minimal navigation monitoring when the content script loads on a
+   * non-product supermarket page (e.g. homepage, search results, category).
+   *
+   * IMPORTANT: wrapHistoryMethod() cannot intercept pushState calls made by the
+   * page's own JavaScript (React Router) because content scripts run in an isolated
+   * world with a separate JavaScript heap — each world has its own view of the
+   * History wrapper object. Wrapping history.pushState in the content script world
+   * only intercepts calls made from that same world, never from the page world.
+   *
+   * The reliable approach is MutationObserver: React always commits DOM mutations
+   * when rendering a new route, so we watch for DOM changes and compare location.href
+   * before and after each batch to detect SPA navigation to a product page.
+   *
+   * popstate (browser back/forward) is a native browser event that fires in all
+   * worlds and is handled separately.
+   */
+  function watchForProductNavigation() {
+    // popstate fires natively across all worlds (browser back/forward navigation)
+    window.addEventListener('popstate', () => {
+      if (_detectionStarted) return;
+      const adapter = findAdapter();
+      if (adapter) _initWithAdapter(adapter);
+    });
+
+    // MutationObserver detects React DOM commits after pushState navigation.
+    // URL is compared after each debounced batch: if location.href changed AND
+    // the new URL matches a product page, kick off full detection.
+    let _lastUrl = location.href;
+    const observer = new MutationObserver(
+      debounce(() => {
+        if (_detectionStarted) return;
+        const currentUrl = location.href;
+        if (currentUrl === _lastUrl) return; // URL unchanged — skip
+        _lastUrl = currentUrl;
+        const adapter = findAdapter();
+        if (!adapter) return; // still not on a product page
+        _initWithAdapter(adapter);
+      }, 150)
+    );
+    observer.observe(document.body, { childList: true, subtree: true });
+  }
+
+  /**
+   * Initialises the extension.
+   * With the manifest now matching the full supermarket domain (not just product
+   * URLs), two paths are possible:
+   *   - Product page (direct load / full-page navigation): adapter resolves
+   *     immediately → _initWithAdapter() starts detection.
+   *   - Non-product page (homepage, search, category): adapter is null →
+   *     watchForProductNavigation() monitors for SPA navigation to a product URL.
+   */
+  function init() {
+    const adapter = findAdapter();
+
+    if (!adapter) {
+      // Not on a product page yet — watch for SPA navigation to one.
+      watchForProductNavigation();
+      return;
+    }
+
+    _initWithAdapter(adapter);
+  }
+
+  /**
+   * Injects the badge stylesheet as a <link> element so it is only loaded on
+   * product pages, never on non-product supermarket pages where CSS class names
+   * could collide with the host page's own styles.
+   *
+   * CSS was previously declared in manifest content_scripts.css which caused it
+   * to load on every matched page (now the full domain). Programmatic injection
+   * here restricts it to pages where detection actually runs. The file is declared
+   * in manifest web_accessible_resources so chrome.runtime.getURL resolves it.
+   */
+  function injectBadgeStyles() {
+    if (document.querySelector('link[data-nova-styles]')) return;
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.setAttribute('data-nova-styles', '');
+    link.href = chrome.runtime.getURL('content/ui/styles.css');
+    document.head.appendChild(link);
+  }
+
+  /**
    * Starts badge detection and sets up SPA and mutation observers.
    * Extracted so both normal and incognito paths share the same startup sequence.
    * Guards against duplicate setup: on re-enable after disable, only reruns
@@ -508,6 +607,8 @@
    * @param {object} adapter
    */
   function startDetection(adapter) {
+    injectBadgeStyles();
+
     if (_detectionStarted) {
       // Observers and listeners are already wired — just re-run detection.
       detectAndBadge(adapter);

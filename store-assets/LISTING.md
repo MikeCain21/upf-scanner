@@ -33,7 +33,7 @@ Display NOVA 1–4 ultra-processed food classification badges on product pages o
 | Permission | Why it's needed |
 |---|---|
 | `storage` | Caches NOVA classifications locally so repeated visits to the same product don't trigger a new API call |
-| Host permissions: 6 supermarket domains | Content scripts activate on **product detail pages only** (not search, checkout, or account pages); required to read product DOM and inject NOVA badges |
+| Host permissions: 6 supermarket domains | Content scripts are loaded across all pages of supported supermarket domains to detect product page navigations within the site; **badge injection and NOVA lookups only occur on product detail pages**. Required to read product DOM and inject NOVA badges |
 | Host permission: `world.openfoodfacts.org` | Required for the service worker to call the OpenFoodFacts API for barcode/ingredient lookup |
 
 ### Remote Code
