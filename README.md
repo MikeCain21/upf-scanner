@@ -252,7 +252,7 @@ npm run format            # Prettier (auto-format source files)
 
 ## Roadmap
 
-### v1.2.1 (Current)
+### v1.3.0 (Current)
 - ✅ Tesco, Sainsbury's, Asda, Morrisons, Waitrose, Ocado support
 - ✅ NOVA 1–4 classification
 - ✅ OpenFoodFacts v3 barcode lookup + stateless ingredient analysis
@@ -260,11 +260,11 @@ npm run format            # Prettier (auto-format source files)
 - ✅ Inline colour-coded badges with tooltip and "Report incorrect score" link
 - ✅ Popup: stats, clear cache, debug toggle
 
-### v1.3 - Enhanced Accuracy
+### Enhanced Accuracy
 - Improved ingredient parsing
 - User corrections fed back to OpenFoodFacts
 
-### v2.0 - Advanced Features
+### Advanced Features
 - Basket analysis (% ultra-processed in cart)
 - Healthier alternative suggestions
 - Nutritional scoring (Nutri-Score)
