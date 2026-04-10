@@ -383,8 +383,9 @@
     if (history[method]._novaWrapped) return;
     const original = history[method].bind(history);
     history[method] = function (...args) {
-      original(...args);
+      const result = original(...args);
       window.dispatchEvent(new Event('nova:urlchange'));
+      return result;
     };
     history[method]._novaWrapped = true;
   }
