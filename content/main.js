@@ -108,6 +108,15 @@
   let _detectionStarted = false;
 
   /**
+   * Set synchronously at the start of _initWithAdapter() to prevent a second
+   * call racing in before the async storage reads complete and _detectionStarted
+   * is set. Without this guard, rapid SPA navigations (product→product) could
+   * trigger duplicate startup work and multiple chrome.storage.onChanged registrations.
+   * @type {boolean}
+   */
+  let _initInProgress = false;
+
+  /**
    * Removes all NOVA badges and clears the badged-element tracker.
    * Called both on SPA navigation and when the extension is disabled.
    */
@@ -452,6 +461,8 @@
    * @param {object} adapter
    */
   function _initWithAdapter(adapter) {
+    if (_initInProgress || _detectionStarted) return;
+    _initInProgress = true;
     const isIncognito = chrome.extension.inIncognitoContext;
 
     if (isIncognito) {
@@ -505,36 +516,46 @@
   }
 
   /**
-   * Sets up minimal URL monitoring when the content script loads on a
-   * non-product supermarket page (e.g. Tesco homepage, search results).
+   * Sets up minimal navigation monitoring when the content script loads on a
+   * non-product supermarket page (e.g. homepage, search results, category).
    *
-   * The manifest now matches the full domain so the extension is ready for SPA
-   * navigation from any page within a supported supermarket site. When a
-   * pushState/replaceState/popstate transition lands on a product URL,
-   * _initWithAdapter() is called to start detection normally.
+   * IMPORTANT: wrapHistoryMethod() cannot intercept pushState calls made by the
+   * page's own JavaScript (React Router) because content scripts run in an isolated
+   * world with a separate JavaScript heap — each world has its own view of the
+   * History wrapper object. Wrapping history.pushState in the content script world
+   * only intercepts calls made from that same world, never from the page world.
    *
-   * The wrapHistoryMethod() guard prevents double-dispatch: setupSpaNavigation()
-   * also calls wrapHistoryMethod(), so the second call is a no-op.
+   * The reliable approach is MutationObserver: React always commits DOM mutations
+   * when rendering a new route, so we watch for DOM changes and compare location.href
+   * before and after each batch to detect SPA navigation to a product page.
    *
-   * The _detectionStarted guard means subsequent product-to-product SPA navigations
-   * are handled exclusively by setupSpaNavigation()'s own listener.
+   * popstate (browser back/forward) is a native browser event that fires in all
+   * worlds and is handled separately.
    */
   function watchForProductNavigation() {
-    wrapHistoryMethod('pushState');
-    wrapHistoryMethod('replaceState');
-    window.addEventListener('popstate', () =>
-      window.dispatchEvent(new Event('nova:urlchange'))
-    );
+    // popstate fires natively across all worlds (browser back/forward navigation)
+    window.addEventListener('popstate', () => {
+      if (_detectionStarted) return;
+      const adapter = findAdapter();
+      if (adapter) _initWithAdapter(adapter);
+    });
 
-    window.addEventListener(
-      'nova:urlchange',
+    // MutationObserver detects React DOM commits after pushState navigation.
+    // URL is compared after each debounced batch: if location.href changed AND
+    // the new URL matches a product page, kick off full detection.
+    let _lastUrl = location.href;
+    const observer = new MutationObserver(
       debounce(() => {
-        if (_detectionStarted) return; // full detection already running — do nothing
+        if (_detectionStarted) return;
+        const currentUrl = location.href;
+        if (currentUrl === _lastUrl) return; // URL unchanged — skip
+        _lastUrl = currentUrl;
         const adapter = findAdapter();
         if (!adapter) return; // still not on a product page
         _initWithAdapter(adapter);
       }, 150)
     );
+    observer.observe(document.body, { childList: true, subtree: true });
   }
 
   /**
