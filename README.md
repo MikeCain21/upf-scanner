@@ -4,6 +4,8 @@
 
 **Identify ultra-processed foods while shopping online**
 
+[![Available in the Chrome Web Store](https://storage.googleapis.com/web-dev-uploads/image/WlD8wC6g8khYWPJUsQceQkhXSlv1/UV4C4ybeBTsZt43U4xis.png)](https://chromewebstore.google.com/detail/upf-scanner-%E2%80%93-spot-ultra/mnlchlnjobldnfnljklkghhedhkaaikp)
+
 A Chrome extension that automatically displays NOVA classification ratings on UK supermarket websites, helping you make healthier food choices.
 
 Supported sites: 
@@ -48,7 +50,7 @@ For a deeper dive, see the BBC documentary [*Irresistible: Why We Can't Stop Eat
 
 ### Chrome Web Store (Recommended)
 
-*Coming soon — submission in progress.*
+[Install from the Chrome Web Store](https://chromewebstore.google.com/detail/upf-scanner-%E2%80%93-spot-ultra/mnlchlnjobldnfnljklkghhedhkaaikp)
 
 ### Load Unpacked (Developers)
 
