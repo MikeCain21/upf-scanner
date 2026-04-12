@@ -306,20 +306,19 @@
   // ---------------------------------------------------------------------------
 
   /**
-   * Returns the text content of an H1 element from its own text nodes only,
-   * excluding any injected child elements (e.g. the NOVA badge). Used by stale
-   * detection so the badge text appended inside the H1 does not corrupt the
-   * product-name comparison across SPA re-renders.
+   * Returns the text content of an H1 element, excluding any injected badge
+   * children. Works regardless of whether the H1's text is a direct text node
+   * (Tesco, ASDA) or wrapped in a child span (Waitrose, Morrisons, Ocado React
+   * renders). Used by stale detection so the badge appended inside the H1 does
+   * not corrupt the product-name comparison across SPA re-renders.
    *
    * @param {Element} el
    * @returns {string}
    */
   function _getH1Text(el) {
-    return Array.from(el.childNodes)
-      .filter(n => n.nodeType === Node.TEXT_NODE)
-      .map(n => n.textContent)
-      .join('')
-      .trim();
+    const clone = el.cloneNode(true);
+    clone.querySelectorAll('.nova-badge, .nova-badge-link').forEach(b => b.remove());
+    return clone.textContent.trim();
   }
 
   /**
