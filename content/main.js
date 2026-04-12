@@ -352,11 +352,12 @@
       // compare the clone's textContent so badge markup does not corrupt the
       // comparison.
       if (_badged.has(el)) {
-        if (_getH1Text(el) === _badged.get(el)) return; // same product — skip
+        const currentName = _getH1Text(el);
+        if (currentName === _badged.get(el)) return; // same product — skip
         // Different text — new product rendered in this element. Remove stale
         // child badge and fall through to re-classify.
         const staleName = _badged.get(el);
-        log(`[SPA re-render] H1 changed: "${staleName}" → "${_getH1Text(el)}" — removing stale badge, re-classifying`);
+        log(`[SPA re-render] H1 changed: "${staleName}" → "${currentName}" — removing stale badge, re-classifying`);
         const staleBadge = el.querySelector('.nova-badge');
         if (staleBadge) {
           // Remove <a> wrapper too if present (scored badge with OFF URL)

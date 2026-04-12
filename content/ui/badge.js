@@ -285,7 +285,8 @@
    * badge (styles.css) keeps it on its own line beneath the title text.
    * For product tiles ([data-product-id]), inserts after the first anchor link
    * in the tile (the product title link), or at the start of the tile if no
-   * anchor is found.
+   * anchor is found. The badge renders as a block element below the link
+   * (display:block in styles.css applies to all badge contexts).
    *
    * @param {HTMLElement} productEl - Product element from detectProducts()
    * @param {HTMLElement} badgeEl   - Badge element to inject
