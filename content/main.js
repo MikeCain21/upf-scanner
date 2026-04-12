@@ -85,7 +85,10 @@
    * _badged.clear() works on Map the same as Set.
    */
   function clearBadgesOnNavigation() {
-    document.querySelectorAll('.nova-badge').forEach(b => b.remove());
+    // Query both wrapper links and bare badge spans. Removing a .nova-badge-link
+    // takes its .nova-badge child with it; calling remove() on the now-detached
+    // child is a safe no-op, so no double-remove errors.
+    document.querySelectorAll('.nova-badge-link, .nova-badge').forEach(b => b.remove());
     _badged.clear();
   }
 
@@ -121,7 +124,7 @@
    * Called both on SPA navigation and when the extension is disabled.
    */
   function disableOnPage() {
-    document.querySelectorAll('.nova-badge').forEach(b => b.remove());
+    document.querySelectorAll('.nova-badge-link, .nova-badge').forEach(b => b.remove());
     _badged.clear();
   }
 
@@ -344,9 +347,10 @@
     products.forEach((el, index) => {
       // Skip elements that have already been badged on a previous run.
       // For Map entries, also check whether React re-rendered a new product
-      // into the same H1 element (characterData in-place update). We read only
-      // the H1's own text nodes (not descendant text) so the injected badge
-      // child does not corrupt the comparison.
+      // into the same H1 element (characterData in-place update). We clone
+      // the H1, strip injected .nova-badge / .nova-badge-link nodes, then
+      // compare the clone's textContent so badge markup does not corrupt the
+      // comparison.
       if (_badged.has(el)) {
         if (_getH1Text(el) === _badged.get(el)) return; // same product — skip
         // Different text — new product rendered in this element. Remove stale

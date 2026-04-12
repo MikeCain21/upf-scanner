@@ -278,9 +278,11 @@
   }
 
   /**
-   * Injects a badge element adjacent to the product element.
+   * Injects a badge element into or adjacent to the product element.
    *
-   * For the main PDP product (H1), inserts the badge immediately after the H1.
+   * For the main PDP product (H1), appends the badge as the last child of the
+   * H1 so the parent flex/grid layout cannot displace it. display:block on the
+   * badge (styles.css) keeps it on its own line beneath the title text.
    * For product tiles ([data-product-id]), inserts after the first anchor link
    * in the tile (the product title link), or at the start of the tile if no
    * anchor is found.

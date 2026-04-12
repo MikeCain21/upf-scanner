@@ -15,7 +15,7 @@
   font-size: 13px;
   font-weight: bold;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
-  white-space: nowrap;        /* prevent "NOV\nA4" line-wrapping in constrained layouts */
+  white-space: nowrap;        /* prevent "NOVA\n4" line-wrapping in constrained layouts */
   cursor: help;
   transition: transform 0.2s ease;
 }
