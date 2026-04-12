@@ -30,6 +30,22 @@
   transform: scale(1.05);
 }
 
+/* Layout for scored badges wrapped in an <a> (those with an OFF URL).
+   Explicit block layout ensures the wrapper behaves identically to an
+   unwrapped .nova-badge regardless of the host page's inline/flex context. */
+a.nova-badge-link {
+  display: block;
+  width: fit-content;
+  margin-top: 4px;    /* mirrors .nova-badge margin-top; inner badge resets to 0 */
+  text-decoration: none;
+}
+
+/* When badge is inside a link wrapper, suppress the badge's own top margin
+   so the wrapper's margin-top is the only spacing applied. */
+a.nova-badge-link .nova-badge {
+  margin-top: 0;
+}
+
 /* Scoped to NOVA links only — avoids leaking onto host page */
 a.nova-badge-link:focus {
   outline: none;

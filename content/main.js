@@ -353,17 +353,26 @@
       // comparison.
       if (_badged.has(el)) {
         const currentName = _getH1Text(el);
-        if (currentName === _badged.get(el)) return; // same product — skip
-        // Different text — new product rendered in this element. Remove stale
-        // child badge and fall through to re-classify.
-        const staleName = _badged.get(el);
-        log(`[SPA re-render] H1 changed: "${staleName}" → "${currentName}" — removing stale badge, re-classifying`);
-        const staleBadge = el.querySelector('.nova-badge');
-        if (staleBadge) {
-          // Remove <a> wrapper too if present (scored badge with OFF URL)
-          (staleBadge.closest('.nova-badge-link') || staleBadge).remove();
+        if (currentName === _badged.get(el)) {
+          // Same product — only skip if the badge is still present in the DOM.
+          // React/Next.js re-renders can recreate H1 children without changing
+          // the title text, silently removing the injected badge.
+          if (el.querySelector('.nova-badge, .nova-badge-link')) return;
+          // Badge was removed by a re-render — clear map entry and fall through
+          // to re-inject.
+          _badged.delete(el);
+        } else {
+          // Different text — new product rendered in this element. Remove stale
+          // child badge and fall through to re-classify.
+          const staleName = _badged.get(el);
+          log(`[SPA re-render] H1 changed: "${staleName}" → "${currentName}" — removing stale badge, re-classifying`);
+          const staleBadge = el.querySelector('.nova-badge');
+          if (staleBadge) {
+            // Remove <a> wrapper too if present (scored badge with OFF URL)
+            (staleBadge.closest('.nova-badge-link') || staleBadge).remove();
+          }
+          _badged.delete(el);
         }
-        _badged.delete(el);
       }
 
       const info = adapter.extractProductInfo(el);

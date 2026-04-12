@@ -237,8 +237,7 @@
       link.href = offUrl;
       link.target = '_blank';
       link.rel = 'noopener noreferrer';
-      link.style.textDecoration = 'none';
-      link.className = 'nova-badge-link';
+      link.className = 'nova-badge-link'; // text-decoration:none and layout set in styles.css
       link.setAttribute('aria-label',
         `NOVA ${novaScore}: ${NOVA_LABELS[novaScore] || 'unknown'} — View on Open Food Facts (opens in new tab)`
       );
