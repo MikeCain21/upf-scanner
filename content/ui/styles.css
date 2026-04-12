@@ -7,18 +7,15 @@
 
 /* NOVA badges */
 .nova-badge {
-  /* !important guards against host-page H1 descendant rules (e.g. h1 * { font-size: inherit })
-     overriding badge sizing now that the badge is injected inside the H1 element. */
-  display: block !important;
-  width: fit-content !important;
-  padding: 5px 12px !important;
-  margin-top: 4px !important;
-  border-radius: 8px !important;
-  font-size: 13px !important;
-  font-weight: bold !important;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif !important;
-  white-space: nowrap !important;  /* prevent "NOV\nA4" line-wrapping in constrained layouts */
-  line-height: normal !important;  /* prevent H1 line-height compressing badge height */
+  display: block;
+  width: fit-content;
+  padding: 5px 12px;
+  margin-top: 4px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: bold;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+  white-space: nowrap;        /* prevent "NOV\nA4" line-wrapping in constrained layouts */
   cursor: help;
   transition: transform 0.2s ease;
 }
