@@ -290,8 +290,10 @@
    */
   function injectBadge(productEl, badgeEl) {
     if (productEl.tagName === 'H1') {
-      // Main PDP product: badge appears immediately after the H1 block
-      productEl.insertAdjacentElement('afterend', badgeEl);
+      // Append inside the H1 so the parent flex/grid layout cannot displace the
+      // badge. display:block on the badge (styles.css) ensures it sits on its own
+      // line beneath the title text regardless of the H1's parent layout.
+      productEl.appendChild(badgeEl);
       return;
     }
 

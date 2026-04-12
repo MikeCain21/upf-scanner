@@ -306,6 +306,23 @@
   // ---------------------------------------------------------------------------
 
   /**
+   * Returns the text content of an H1 element from its own text nodes only,
+   * excluding any injected child elements (e.g. the NOVA badge). Used by stale
+   * detection so the badge text appended inside the H1 does not corrupt the
+   * product-name comparison across SPA re-renders.
+   *
+   * @param {Element} el
+   * @returns {string}
+   */
+  function _getH1Text(el) {
+    return Array.from(el.childNodes)
+      .filter(n => n.nodeType === Node.TEXT_NODE)
+      .map(n => n.textContent)
+      .join('')
+      .trim();
+  }
+
+  /**
    * Detects the main PDP product and injects a NOVA badge.
    *
    * Uses _badged Map to skip elements that already have a badge, making it
@@ -328,17 +345,19 @@
     products.forEach((el, index) => {
       // Skip elements that have already been badged on a previous run.
       // For Map entries, also check whether React re-rendered a new product
-      // into the same H1 element (characterData in-place update). el.textContent
-      // is uncontaminated by the badge because injectBadge() inserts it as a
-      // sibling (afterend), not a child.
+      // into the same H1 element (characterData in-place update). We read only
+      // the H1's own text nodes (not descendant text) so the injected badge
+      // child does not corrupt the comparison.
       if (_badged.has(el)) {
-        if (el.textContent.trim() === _badged.get(el)) return; // same product — skip
+        if (_getH1Text(el) === _badged.get(el)) return; // same product — skip
         // Different text — new product rendered in this element. Remove stale
-        // sibling badge and fall through to re-classify.
+        // child badge and fall through to re-classify.
         const staleName = _badged.get(el);
-        log(`[SPA re-render] H1 changed: "${staleName}" → "${el.textContent.trim()}" — removing stale badge, re-classifying`);
-        if (el.nextElementSibling?.classList?.contains('nova-badge')) {
-          el.nextElementSibling.remove();
+        log(`[SPA re-render] H1 changed: "${staleName}" → "${_getH1Text(el)}" — removing stale badge, re-classifying`);
+        const staleBadge = el.querySelector('.nova-badge');
+        if (staleBadge) {
+          // Remove <a> wrapper too if present (scored badge with OFF URL)
+          (staleBadge.closest('.nova-badge-link') || staleBadge).remove();
         }
         _badged.delete(el);
       }

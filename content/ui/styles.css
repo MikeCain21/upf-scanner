@@ -7,16 +7,15 @@
 
 /* NOVA badges */
 .nova-badge {
-  display: inline-block;
-  width: fit-content;         /* prevent stretching in block containers */
-  align-self: flex-start;     /* prevent stretching when inside a flex column */
-  padding: 4px 10px;
-  margin-left: 8px;
-  border-radius: 6px;
-  font-size: 11px;
+  display: block;
+  width: fit-content;
+  padding: 5px 12px;
+  margin-top: 4px;
+  border-radius: 8px;
+  font-size: 13px;
   font-weight: bold;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
-  vertical-align: middle;
+  white-space: nowrap;        /* prevent "NOV\nA4" line-wrapping in constrained layouts */
   cursor: help;
   transition: transform 0.2s ease;
 }
