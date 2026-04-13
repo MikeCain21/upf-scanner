@@ -237,8 +237,7 @@
       link.href = offUrl;
       link.target = '_blank';
       link.rel = 'noopener noreferrer';
-      link.style.textDecoration = 'none';
-      link.className = 'nova-badge-link';
+      link.className = 'nova-badge-link'; // text-decoration:none and layout set in styles.css
       link.setAttribute('aria-label',
         `NOVA ${novaScore}: ${NOVA_LABELS[novaScore] || 'unknown'} — View on Open Food Facts (opens in new tab)`
       );
@@ -278,20 +277,25 @@
   }
 
   /**
-   * Injects a badge element adjacent to the product element.
+   * Injects a badge element into or adjacent to the product element.
    *
-   * For the main PDP product (H1), inserts the badge immediately after the H1.
+   * For the main PDP product (H1), appends the badge as the last child of the
+   * H1 so the parent flex/grid layout cannot displace it. display:block on the
+   * badge (styles.css) keeps it on its own line beneath the title text.
    * For product tiles ([data-product-id]), inserts after the first anchor link
    * in the tile (the product title link), or at the start of the tile if no
-   * anchor is found.
+   * anchor is found. The badge renders as a block element below the link
+   * (display:block in styles.css applies to all badge contexts).
    *
    * @param {HTMLElement} productEl - Product element from detectProducts()
    * @param {HTMLElement} badgeEl   - Badge element to inject
    */
   function injectBadge(productEl, badgeEl) {
     if (productEl.tagName === 'H1') {
-      // Main PDP product: badge appears immediately after the H1 block
-      productEl.insertAdjacentElement('afterend', badgeEl);
+      // Append inside the H1 so the parent flex/grid layout cannot displace the
+      // badge. display:block on the badge (styles.css) ensures it sits on its own
+      // line beneath the title text regardless of the H1's parent layout.
+      productEl.appendChild(badgeEl);
       return;
     }
 

@@ -7,16 +7,15 @@
 
 /* NOVA badges */
 .nova-badge {
-  display: inline-block;
-  width: fit-content;         /* prevent stretching in block containers */
-  align-self: flex-start;     /* prevent stretching when inside a flex column */
-  padding: 4px 10px;
-  margin-left: 8px;
-  border-radius: 6px;
-  font-size: 11px;
+  display: block;
+  width: fit-content;
+  padding: 5px 12px;
+  margin-top: 4px;
+  border-radius: 8px;
+  font-size: 13px;
   font-weight: bold;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
-  vertical-align: middle;
+  white-space: nowrap;        /* prevent "NOVA\n4" line-wrapping in constrained layouts */
   cursor: help;
   transition: transform 0.2s ease;
 }
@@ -29,6 +28,24 @@
   outline: 3px solid #005fcc;
   outline-offset: 2px;
   transform: scale(1.05);
+}
+
+/* Layout for scored badges wrapped in an <a> (those with an OFF URL).
+   Explicit block layout ensures the wrapper behaves identically to an
+   unwrapped .nova-badge regardless of the host page's inline/flex context. */
+a.nova-badge-link {
+  display: block;
+  width: fit-content;
+  margin-top: 4px;    /* mirrors .nova-badge margin-top; inner badge resets to 0 */
+  text-decoration: none;
+  cursor: pointer;    /* override .nova-badge cursor:help so linked badges feel clickable */
+}
+
+/* When badge is inside a link wrapper, suppress the badge's own top margin
+   so the wrapper's margin-top is the only spacing applied. */
+a.nova-badge-link .nova-badge {
+  margin-top: 0;
+  cursor: pointer;    /* ensure pointer wins even when hovering the inner span */
 }
 
 /* Scoped to NOVA links only — avoids leaking onto host page */

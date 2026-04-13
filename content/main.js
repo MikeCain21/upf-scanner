@@ -85,7 +85,10 @@
    * _badged.clear() works on Map the same as Set.
    */
   function clearBadgesOnNavigation() {
-    document.querySelectorAll('.nova-badge').forEach(b => b.remove());
+    // Query both wrapper links and bare badge spans. Removing a .nova-badge-link
+    // takes its .nova-badge child with it; calling remove() on the now-detached
+    // child is a safe no-op, so no double-remove errors.
+    document.querySelectorAll('.nova-badge-link, .nova-badge').forEach(b => b.remove());
     _badged.clear();
   }
 
@@ -121,7 +124,7 @@
    * Called both on SPA navigation and when the extension is disabled.
    */
   function disableOnPage() {
-    document.querySelectorAll('.nova-badge').forEach(b => b.remove());
+    document.querySelectorAll('.nova-badge-link, .nova-badge').forEach(b => b.remove());
     _badged.clear();
   }
 
@@ -306,6 +309,22 @@
   // ---------------------------------------------------------------------------
 
   /**
+   * Returns the text content of an H1 element, excluding any injected badge
+   * children. Works regardless of whether the H1's text is a direct text node
+   * (Tesco, ASDA) or wrapped in a child span (Waitrose, Morrisons, Ocado React
+   * renders). Used by stale detection so the badge appended inside the H1 does
+   * not corrupt the product-name comparison across SPA re-renders.
+   *
+   * @param {Element} el
+   * @returns {string}
+   */
+  function _getH1Text(el) {
+    const clone = el.cloneNode(true);
+    clone.querySelectorAll('.nova-badge, .nova-badge-link').forEach(b => b.remove());
+    return clone.textContent.trim();
+  }
+
+  /**
    * Detects the main PDP product and injects a NOVA badge.
    *
    * Uses _badged Map to skip elements that already have a badge, making it
@@ -328,19 +347,32 @@
     products.forEach((el, index) => {
       // Skip elements that have already been badged on a previous run.
       // For Map entries, also check whether React re-rendered a new product
-      // into the same H1 element (characterData in-place update). el.textContent
-      // is uncontaminated by the badge because injectBadge() inserts it as a
-      // sibling (afterend), not a child.
+      // into the same H1 element (characterData in-place update). We clone
+      // the H1, strip injected .nova-badge / .nova-badge-link nodes, then
+      // compare the clone's textContent so badge markup does not corrupt the
+      // comparison.
       if (_badged.has(el)) {
-        if (el.textContent.trim() === _badged.get(el)) return; // same product — skip
-        // Different text — new product rendered in this element. Remove stale
-        // sibling badge and fall through to re-classify.
-        const staleName = _badged.get(el);
-        log(`[SPA re-render] H1 changed: "${staleName}" → "${el.textContent.trim()}" — removing stale badge, re-classifying`);
-        if (el.nextElementSibling?.classList?.contains('nova-badge')) {
-          el.nextElementSibling.remove();
+        const currentName = _getH1Text(el);
+        if (currentName === _badged.get(el)) {
+          // Same product — only skip if the badge is still present in the DOM.
+          // React/Next.js re-renders can recreate H1 children without changing
+          // the title text, silently removing the injected badge.
+          if (el.querySelector('.nova-badge, .nova-badge-link')) return;
+          // Badge was removed by a re-render — clear map entry and fall through
+          // to re-inject.
+          _badged.delete(el);
+        } else {
+          // Different text — new product rendered in this element. Remove stale
+          // child badge and fall through to re-classify.
+          const staleName = _badged.get(el);
+          log(`[SPA re-render] H1 changed: "${staleName}" → "${currentName}" — removing stale badge, re-classifying`);
+          const staleBadge = el.querySelector('.nova-badge');
+          if (staleBadge) {
+            // Remove <a> wrapper too if present (scored badge with OFF URL)
+            (staleBadge.closest('.nova-badge-link') || staleBadge).remove();
+          }
+          _badged.delete(el);
         }
-        _badged.delete(el);
       }
 
       const info = adapter.extractProductInfo(el);
