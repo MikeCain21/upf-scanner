@@ -98,8 +98,13 @@ describe('NOVA 3 — processed food with culinary additions', () => {
   });
 
   it('returns score 3 when sugar present with ≥2 ingredients', () => {
-    const result = classifyByIngredients(['Fruit', 'Sugar', 'Water', 'Pectin']);
+    const result = classifyByIngredients(['Fruit', 'Sugar', 'Water']);
     expect(result.score).toBe(3);
+  });
+
+  it('returns score 4 when pectin present (gelling agent, NOVA 4 indicator)', () => {
+    const result = classifyByIngredients(['Fruit', 'Sugar', 'Water', 'Pectin']);
+    expect(result.score).toBe(4);
   });
 
   it('returns score 3 for canned tomatoes (tomatoes + salt)', () => {
@@ -297,9 +302,14 @@ describe('classifyByIngredients — NOVA 2 single culinary ingredient + NOVA 3 p
     expect(result.score).toBe(3);
   });
 
-  it('returns NOVA 3 for stabiliser in ingredients', () => {
-    const result = classifyByIngredients(['Milk', 'Salt', 'Stabiliser (Carrageenan)']);
+  it('returns NOVA 3 for stabiliser keyword without named additive', () => {
+    const result = classifyByIngredients(['Milk', 'Salt', 'Stabiliser']);
     expect(result.score).toBe(3);
+  });
+
+  it('returns NOVA 4 when carrageenan named (stabiliser = NOVA 4 indicator)', () => {
+    const result = classifyByIngredients(['Milk', 'Salt', 'Stabiliser (Carrageenan)']);
+    expect(result.score).toBe(4);
   });
 
   // Cheese bare-name fix — products like Cathedral City Cheddar on Ocado return only
