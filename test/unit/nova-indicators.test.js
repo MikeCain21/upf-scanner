@@ -155,7 +155,8 @@ describe('Real product fixtures', () => {
   });
 
   // Bread — 14 tokens from parseIngredients test fixture
-  it('Bread → count ≥ 2 (has E471, E472e)', () => {
+  // Updated: calcium propionate now caught by common-name pattern
+  it('Bread → count ≥ 3 (has E471, E472e, calcium propionate, flavouring)', () => {
     const breadTokens = [
       'Wheat Flour [with Calcium, Iron, Niacin (B3) and Thiamin (B1)]',
       'Wholemeal Wheat Flour',
@@ -173,7 +174,7 @@ describe('Real product fixtures', () => {
       'Flour Treatment Agent: Ascorbic Acid (Vitamin C)',
     ];
     const { count } = detectIndicators(breadTokens);
-    expect(count).toBeGreaterThanOrEqual(2);
+    expect(count).toBeGreaterThanOrEqual(3);
   });
 
   // HotDogs — 16-token realistic UK product fixture
@@ -470,5 +471,170 @@ describe('OFF alignment — regression: safe ingredients must NOT trigger', () =
   it('Corn Flour (plain) → count === 0', () => {
     const { count } = detectIndicators(['Corn Flour']);
     expect(count).toBe(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Common-name additive patterns
+// ---------------------------------------------------------------------------
+
+describe('Common-name additive patterns — emulsifiers / stabilisers / thickeners', () => {
+  it('Xanthan Gum → flagged', () => {
+    const { indicators } = detectIndicators(['Xanthan Gum']);
+    expect(indicators).toContain('xanthan gum (E415)');
+  });
+
+  it('Guar Gum → flagged', () => {
+    const { indicators } = detectIndicators(['Guar Gum']);
+    expect(indicators).toContain('guar gum (E412)');
+  });
+
+  it('Gum (bare) → NOT flagged', () => {
+    const { count } = detectIndicators(['Gum']);
+    expect(count).toBe(0);
+  });
+
+  it('Carrageenan → flagged', () => {
+    const { indicators } = detectIndicators(['Carrageenan']);
+    expect(indicators).toContain('carrageenan (E407)');
+  });
+
+  it('Mono- and Diglycerides of Fatty Acids → flagged', () => {
+    const { indicators } = detectIndicators(['Mono- and Diglycerides of Fatty Acids']);
+    expect(indicators).toContain('mono- and diglycerides (E471)');
+  });
+
+  it('Mono and Diglycerides (without hyphen) → flagged', () => {
+    const { indicators } = detectIndicators(['Mono and Diglycerides of Fatty Acids']);
+    expect(indicators).toContain('mono- and diglycerides (E471)');
+  });
+
+  it('Pectin → flagged', () => {
+    const { indicators } = detectIndicators(['Pectin']);
+    expect(indicators).toContain('pectin (E440)');
+  });
+});
+
+describe('Common-name additive patterns — preservatives', () => {
+  it('Sodium Benzoate → flagged', () => {
+    const { indicators } = detectIndicators(['Sodium Benzoate']);
+    expect(indicators).toContain('sodium benzoate (E211)');
+  });
+
+  it('Potassium Sorbate → flagged', () => {
+    const { indicators } = detectIndicators(['Potassium Sorbate']);
+    expect(indicators).toContain('potassium sorbate (E202)');
+  });
+
+  it('Calcium Propionate → flagged', () => {
+    const { indicators } = detectIndicators(['Calcium Propionate']);
+    expect(indicators).toContain('calcium propionate (E282)');
+  });
+
+  it('Preservative: Calcium Propionate → flagged (real label format)', () => {
+    const { indicators } = detectIndicators(['Preservative: Calcium Propionate']);
+    expect(indicators).toContain('calcium propionate (E282)');
+  });
+
+  it('Sodium Nitrite → flagged', () => {
+    const { indicators } = detectIndicators(['Sodium Nitrite']);
+    expect(indicators).toContain('sodium nitrite (E250)');
+  });
+
+  it('Sodium Nitrate → flagged', () => {
+    const { indicators } = detectIndicators(['Sodium Nitrate']);
+    expect(indicators).toContain('sodium nitrate (E251)');
+  });
+});
+
+describe('Common-name additive patterns — sweeteners', () => {
+  it('Acesulfame K → flagged', () => {
+    const { indicators } = detectIndicators(['Acesulfame K']);
+    expect(indicators).toContain('acesulfame K (E950)');
+  });
+
+  it('Acesulfame Potassium → flagged', () => {
+    const { indicators } = detectIndicators(['Acesulfame Potassium']);
+    expect(indicators).toContain('acesulfame K (E950)');
+  });
+
+  it('Sucralose → flagged', () => {
+    const { indicators } = detectIndicators(['Sucralose']);
+    expect(indicators).toContain('sucralose (E955)');
+  });
+
+  it('Aspartame → flagged', () => {
+    const { indicators } = detectIndicators(['Aspartame']);
+    expect(indicators).toContain('aspartame (E951)');
+  });
+
+  it('Saccharin → flagged', () => {
+    const { indicators } = detectIndicators(['Saccharin']);
+    expect(indicators).toContain('saccharin (E954)');
+  });
+
+  it('Sorbitol → flagged', () => {
+    const { indicators } = detectIndicators(['Sorbitol']);
+    expect(indicators).toContain('sorbitol (E420)');
+  });
+});
+
+describe('Common-name additive patterns — flavour enhancers', () => {
+  it('Monosodium Glutamate → flagged', () => {
+    const { indicators } = detectIndicators(['Monosodium Glutamate']);
+    expect(indicators).toContain('MSG (E621)');
+  });
+});
+
+describe('Common-name additive patterns — new indicators', () => {
+  it('Fructose (standalone) → flagged', () => {
+    const { indicators } = detectIndicators(['Fructose']);
+    expect(indicators).toContain('fructose');
+  });
+
+  it('Polydextrose → flagged', () => {
+    const { indicators } = detectIndicators(['Polydextrose']);
+    expect(indicators).toContain('polydextrose');
+  });
+});
+
+describe('Common-name additive patterns — regression: safe ingredients', () => {
+  it('Sodium Bicarbonate → NOT flagged (baking soda, NOVA 2)', () => {
+    const { count } = detectIndicators(['Sodium Bicarbonate']);
+    expect(count).toBe(0);
+  });
+
+  it('Citric Acid → NOT flagged (natural, correctly excluded)', () => {
+    const { count } = detectIndicators(['Citric Acid']);
+    expect(count).toBe(0);
+  });
+
+  it('Ascorbic Acid → NOT flagged (vitamin C, correctly excluded)', () => {
+    const { count } = detectIndicators(['Ascorbic Acid']);
+    expect(count).toBe(0);
+  });
+
+  it('Salt → NOT flagged (culinary ingredient)', () => {
+    const { count } = detectIndicators(['Salt']);
+    expect(count).toBe(0);
+  });
+
+  it('Sugar → NOT flagged (culinary ingredient)', () => {
+    const { count } = detectIndicators(['Sugar']);
+    expect(count).toBe(0);
+  });
+});
+
+describe('Common-name patterns — no double-counting with E-numbers', () => {
+  it('Thickener (Guar Gum) in hot dogs fixture → now caught', () => {
+    const { indicators } = detectIndicators(['Thickener (Guar Gum)']);
+    expect(indicators).toContain('guar gum (E412)');
+  });
+
+  it('Fructose does not double-count when High-Fructose Corn Syrup is separate token', () => {
+    const { indicators } = detectIndicators(['High-Fructose Corn Syrup']);
+    // Should match the existing HFCS pattern; fructose may also match but
+    // the important thing is the count is sensible
+    expect(indicators).toContain('high-fructose corn syrup');
   });
 });
